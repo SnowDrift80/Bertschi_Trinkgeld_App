@@ -1,0 +1,102 @@
+.
+├── alembic.ini
+├── app
+│   ├── config.py
+│   ├── helpers
+│   │   ├── helper.py
+│   │   ├── pdf
+│   │   └── __pycache__
+│   ├── __init__.py
+│   ├── models.py
+│   ├── __pycache__
+│   │   ├── config.cpython-313.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── __init__.cpython-313.pyc
+│   │   ├── models.cpython-311.pyc
+│   │   ├── models.cpython-313.pyc
+│   │   ├── routes.cpython-311.pyc
+│   │   └── routes.cpython-313.pyc
+│   ├── routes.py
+│   ├── static
+│   │   ├── fomantic
+│   │   ├── images
+│   │   ├── js
+│   │   └── tree.txt
+│   ├── templates
+│   │   ├── admin
+│   │   ├── create_tip.html
+│   │   ├── dashboard.html
+│   │   ├── edit_tip_detail.html
+│   │   ├── edit_tip.html
+│   │   ├── index.html
+│   │   └── partials
+│   └── uploads
+├── bertschi_scale.db
+├── config.py
+├── docker-compose.yml
+├── Dockerfile
+├── docs
+│   └── App_Pflichtenheft.odt
+├── masterdata
+│   ├── Fahrzeugliste_generiert.xlsx
+│   ├── FzgListe2.xlsx
+│   ├── FzgListe.xlsx
+│   ├── Materialkategorienliste2.xlsx
+│   ├── materialkategorienliste_generiert.xlsx
+│   ├── Materialkategorienliste.xlsx
+│   ├── muldentypliste2.xlsx
+│   ├── Muldentypliste_generiert.xlsx
+│   ├── Muldentypliste.xlsx
+│   ├── Standortliste2.xlsx
+│   ├── standortliste_generiert.xlsx
+│   └── Standortliste.xlsx
+├── migrations
+│   ├── env.py
+│   ├── __pycache__
+│   │   └── env.cpython-311.pyc
+│   ├── README
+│   ├── script.py.mako
+│   └── versions
+│       ├── 6cb376f2e8ec_drop_transaction_table_and_recreate_.py
+│       ├── f0fcb9c94283_make_customer_field_nullable.py
+│       └── __pycache__
+├── __pycache__
+│   ├── config.cpython-311.pyc
+│   └── config.cpython-313.pyc
+├── requirements.txt
+├── run.py
+├── scale.code-workspace
+├── seed_admin.py
+├── setup_db.py
+├── tree
+├── tree.txt
+├── trinkgeld.code-workspace
+└── venv
+    ├── bin
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── Activate.ps1
+    │   ├── alembic
+    │   ├── f2py
+    │   ├── flask
+    │   ├── mako-render
+    │   ├── markdown-it
+    │   ├── normalizer
+    │   ├── numpy-config
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.13
+    │   ├── pygmentize
+    │   ├── python -> python3
+    │   ├── python3 -> /usr/bin/python3
+    │   └── python3.13 -> python3
+    ├── include
+    │   ├── python3.13
+    │   └── site
+    ├── lib
+    │   └── python3.13
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+29 directories, 71 files

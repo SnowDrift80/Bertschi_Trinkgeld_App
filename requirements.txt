@@ -1,0 +1,14 @@
+Flask>=3.0
+Flask-WTF>=1.2
+Flask-Migrate>=4.0
+Flask-SQLAlchemy>=3.1
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+gunicorn>=22.0
+python-dotenv>=1.0
+
+# Additional dependencies used in routes/models
+pandas>=2.0
+openpyxl>=3.1
+Flask-Limiter>=3.5
+pytz>=2024.1

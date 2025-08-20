@@ -1,0 +1,31 @@
+{% for u in users %}
+<tr hx-get="{{ url_for('get_user', user_id=u.id) }}"
+    hx-target="#user-form"
+    hx-swap="innerHTML"
+    style="cursor: pointer;">
+  <td>{{ u.name }}</td>
+  <td>{{ u.email }}</td>
+  <td>{{ u.location }}</td>
+  <td>{{ u.role }}</td>
+  <td>
+    <a href="#"
+       hx-get="{{ url_for('get_user', user_id=u.id) }}"
+       hx-target="#user-form"
+       hx-swap="innerHTML">Bearbeiten</a>
+    |
+    <button class="ui red mini button" type="button"
+            onclick="showDeactivateModal('{{ url_for('deactivate_user', user_id=u.id) }}')">
+      Löschen
+    </button>
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="5">
+    <div class="ui message">
+      <div class="header">Keine Treffer</div>
+      <p>Es wurden keine Benutzer gefunden.</p>
+    </div>
+  </td>
+</tr>
+{% endfor %}

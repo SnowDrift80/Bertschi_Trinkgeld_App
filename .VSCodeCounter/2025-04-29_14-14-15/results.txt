@@ -1,0 +1,69 @@
+Date : 2025-04-29 14:14:15
+Directory : /media/ironwolf/python/projects/bertschi/scale
+Total : 26 files,  2551 codes, 155 comments, 523 blanks, all 3229 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| HTML     |         15 |      1,558 |         36 |        193 |      1,787 |
+| Python   |         10 |        898 |        119 |        305 |      1,322 |
+| Ini      |          1 |         95 |          0 |         25 |        120 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                                    | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                       |         26 |      2,551 |        155 |        523 |      3,229 |
+| . (Files)                                                                                                               |          5 |        131 |          2 |         41 |        174 |
+| app                                                                                                                     |         18 |      2,314 |        135 |        435 |      2,884 |
+| app (Files)                                                                                                             |          3 |        756 |         99 |        242 |      1,097 |
+| app/templates                                                                                                           |         15 |      1,558 |         36 |        193 |      1,787 |
+| app/templates (Files)                                                                                                   |          2 |        197 |         11 |         26 |        234 |
+| app/templates/admin                                                                                                     |          8 |        631 |         11 |         75 |        717 |
+| app/templates/admin (Files)                                                                                             |          1 |         58 |          3 |          8 |         69 |
+| app/templates/admin/masterdata                                                                                          |          5 |        421 |          5 |         46 |        472 |
+| app/templates/admin/users                                                                                               |          2 |        152 |          3 |         21 |        176 |
+| app/templates/admin/users (Files)                                                                                       |          1 |        119 |          3 |         17 |        139 |
+| app/templates/admin/users/partials                                                                                      |          1 |         33 |          0 |          4 |         37 |
+| app/templates/transactions                                                                                              |          5 |        730 |         14 |         92 |        836 |
+| app/templates/transactions (Files)                                                                                      |          3 |        597 |         13 |         78 |        688 |
+| app/templates/transactions/partials                                                                                     |          2 |        133 |          1 |         14 |        148 |
+| migrations                                                                                                              |          3 |        106 |         18 |         47 |        171 |
+| migrations (Files)                                                                                                      |          1 |         47 |         12 |         21 |         80 |
+| migrations/versions                                                                                                     |          2 |         59 |          6 |         26 |         91 |
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                                                | language | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| /media/ironwolf/python/projects/bertschi/scale/alembic.ini                                                              | Ini      |         95 |          0 |         25 |        120 |
+| /media/ironwolf/python/projects/bertschi/scale/app/__init__.py                                                          | Python   |         13 |          0 |          6 |         19 |
+| /media/ironwolf/python/projects/bertschi/scale/app/models.py                                                            | Python   |         60 |          7 |         28 |         95 |
+| /media/ironwolf/python/projects/bertschi/scale/app/routes.py                                                            | Python   |        683 |         92 |        208 |        983 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/admin.html                                           | HTML     |         58 |          3 |          8 |         69 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/container_type_list_import.html           | HTML     |         90 |          0 |          9 |         99 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/location_list_import.html                 | HTML     |        100 |          0 |         15 |        115 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/masterdata_import.html                    | HTML     |         56 |          3 |          7 |         66 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/material_category_list_import.html        | HTML     |         90 |          0 |          9 |         99 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/vehicle_list_import.html                  | HTML     |         85 |          2 |          6 |         93 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/users/partials/user_form.html                        | HTML     |         33 |          0 |          4 |         37 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/admin/users/user_management.html                           | HTML     |        119 |          3 |         17 |        139 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/dashboard.html                                             | HTML     |        133 |          8 |         21 |        162 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/index.html                                                 | HTML     |         64 |          3 |          5 |         72 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/complete_transaction.html                     | HTML     |        155 |          5 |         23 |        183 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/edit_transaction.html                         | HTML     |        226 |          3 |         37 |        266 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/completed_transactions_table.html    | HTML     |         89 |          1 |         10 |        100 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/incomplete_transactions_table.html   | HTML     |         44 |          0 |          4 |         48 |
+| /media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/start_transaction.html                        | HTML     |        216 |          5 |         18 |        239 |
+| /media/ironwolf/python/projects/bertschi/scale/config.py                                                                | Python   |          6 |          0 |          3 |          9 |
+| /media/ironwolf/python/projects/bertschi/scale/migrations/env.py                                                        | Python   |         47 |         12 |         21 |         80 |
+| /media/ironwolf/python/projects/bertschi/scale/migrations/versions/6cb376f2e8ec_drop_transaction_table_and_recreate_.py | Python   |         37 |          1 |         16 |         54 |
+| /media/ironwolf/python/projects/bertschi/scale/migrations/versions/f0fcb9c94283_make_customer_field_nullable.py         | Python   |         22 |          5 |         10 |         37 |
+| /media/ironwolf/python/projects/bertschi/scale/run.py                                                                   | Python   |          4 |          0 |          3 |          7 |
+| /media/ironwolf/python/projects/bertschi/scale/seed_amin.py                                                             | Python   |         20 |          1 |          6 |         27 |
+| /media/ironwolf/python/projects/bertschi/scale/setup_db.py                                                              | Python   |          6 |          1 |          4 |         11 |
+| Total                                                                                                                   |          |      2,551 |        155 |        523 |      3,229 |
++-------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+

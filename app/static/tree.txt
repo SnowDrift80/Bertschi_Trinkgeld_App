@@ -1,0 +1,71 @@
+./
+├── fomantic
+│   ├── semantic.js
+│   ├── semantic.min.css
+│   └── themes
+│       ├── basic
+│       │   └── assets
+│       │       └── fonts
+│       │           ├── icons.woff
+│       │           ├── icons.woff2
+│       │           └── LICENSE.txt
+│       ├── default
+│       │   └── assets
+│       │       └── fonts
+│       │           ├── brand-icons.woff
+│       │           ├── brand-icons.woff2
+│       │           ├── icons.woff
+│       │           ├── icons.woff2
+│       │           ├── Lato-BoldItalic.woff
+│       │           ├── Lato-BoldItalic.woff2
+│       │           ├── Lato-Bold.woff
+│       │           ├── Lato-Bold.woff2
+│       │           ├── Lato-Italic.woff
+│       │           ├── Lato-Italic.woff2
+│       │           ├── LatoLatin-BoldItalic.woff
+│       │           ├── LatoLatin-BoldItalic.woff2
+│       │           ├── LatoLatin-Bold.woff
+│       │           ├── LatoLatin-Bold.woff2
+│       │           ├── LatoLatin-Italic.woff
+│       │           ├── LatoLatin-Italic.woff2
+│       │           ├── LatoLatin-Regular.woff
+│       │           ├── LatoLatin-Regular.woff2
+│       │           ├── Lato-Regular.woff
+│       │           ├── Lato-Regular.woff2
+│       │           ├── LICENSE_icons.txt
+│       │           ├── LICENSE_Lato.txt
+│       │           ├── outline-icons.woff
+│       │           └── outline-icons.woff2
+│       ├── famfamfam
+│       │   └── assets
+│       │       └── images
+│       │           └── flags.png
+│       ├── github
+│       │   └── assets
+│       │       └── fonts
+│       │           ├── LICENSE.txt
+│       │           ├── octicons.woff
+│       │           └── octicons.woff2
+│       └── material
+│           └── assets
+│               └── fonts
+│                   ├── icons.woff
+│                   ├── icons.woff2
+│                   └── LICENSE.txt
+├── images
+│   ├── bertschi_favicon32.png
+│   ├── bertschi_favicon90.png
+│   ├── bertschi_logo_120.jpg
+│   ├── bertschi_logo_240.jpg
+│   ├── bertschi_logo.jpg
+│   ├── recycling-paradies_logo
+│   ├── recycling-paradies_logo_inverted_384.jpg
+│   ├── recycling-paradies_logo_inverted_384.png
+│   ├── recycling-paradies_logo_inverted.jpg
+│   └── recycling-paradies_logo.jpg
+├── js
+│   ├── htmx.min.js
+│   └── jquery-3.6.0.min.js
+└── tree.txt
+
+20 directories, 49 files

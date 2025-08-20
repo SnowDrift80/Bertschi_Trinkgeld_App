@@ -1,0 +1,64 @@
+.
+├── alembic.ini
+├── app
+│   ├── __init__.py
+│   ├── models.py
+│   ├── routes.py
+│   ├── static
+│   │   └── images
+│   │       ├── bertschi_favicon32.png
+│   │       ├── bertschi_favicon90.png
+│   │       ├── bertschi_logo_120.jpg
+│   │       ├── bertschi_logo_240.jpg
+│   │       └── bertschi_logo.jpg
+│   ├── templates
+│   │   ├── admin
+│   │   │   ├── admin.html
+│   │   │   ├── masterdata
+│   │   │   │   ├── container_type_list_import.html
+│   │   │   │   ├── location_list_import.html
+│   │   │   │   ├── masterdata_import.html
+│   │   │   │   ├── material_category_list_import.html
+│   │   │   │   └── vehicle_list_import.html
+│   │   │   └── users
+│   │   │       ├── partials
+│   │   │       │   └── user_form.html
+│   │   │       └── user_management.html
+│   │   ├── dashboard.html
+│   │   ├── index.html
+│   │   └── transactions
+│   │       ├── complete_transaction.html
+│   │       ├── edit_transaction.html
+│   │       ├── partials
+│   │       │   ├── completed_transactions_table.html
+│   │       │   └── incomplete_transactions_table.html
+│   │       └── start_transaction.html
+│   └── uploads
+├── bertschi_scale.db
+├── config.py
+├── docs
+│   ├── App_Pflichtenheft.odt
+│   └── greder_dürrenäsch.odt
+├── masterdata
+│   ├── FzgListe2.xlsx
+│   ├── FzgListe.xlsx
+│   ├── Materialkategorienliste2.xlsx
+│   ├── Materialkategorienliste.xlsx
+│   ├── muldentypliste2.xlsx
+│   ├── Muldentypliste.xlsx
+│   ├── Standortliste2.xlsx
+│   └── Standortliste.xlsx
+├── migrations
+│   ├── env.py
+│   ├── README
+│   ├── script.py.mako
+│   └── versions
+│       ├── 6cb376f2e8ec_drop_transaction_table_and_recreate_.py
+│       └── f0fcb9c94283_make_customer_field_nullable.py
+├── run.py
+├── scale.code-workspace
+├── seed_amin.py
+├── setup_db.py
+└── tree
+
+16 directories, 46 files

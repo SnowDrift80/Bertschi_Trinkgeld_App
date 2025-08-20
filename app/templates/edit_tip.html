@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Trinkgeld erfassen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+</head>
+<body>
+
+{% include 'partials/topbar.html' %} 
+
+<div class="ui container" style="margin-top: 2rem;">
+
+    <!-- Header Information -->
+    <div class="ui segment">
+        <div class="ui grid">
+            <div class="eight wide column">
+                <h3 class="ui header">Trinkgelderfassung</h3>
+                <p><strong>Datum:</strong> {{ tip.timestamp.strftime('%d.%m.%Y %H:%M') }}</p>
+                <p><strong>Erstellt von:</strong> {{ tip.username }}</p>
+            </div>
+            <div class="eight wide column right aligned" style="display: flex; align-items: center; justify-content: flex-end;">
+                <div style="font-size: 3.4em; font-weight: bold; color: #2185d0;">{{ tip.location }}</div>
+            </div>
+        </div>
+        <div class="ui grid">
+            <div class="eight wide column left aligned">
+                <button 
+                    type="button" 
+                    class="ui red icon button show-header-delete-modal" 
+                    data-delete-url="{{ url_for('delete_tip', tiph_id=tip.tiph_id) }}">
+                    <i class="trash icon"></i> Löschen
+                </button>
+            </div>
+            <div class="eight wide column right aligned">
+                <a href="{{ url_for('dashboard') }}" class="ui green icon button">
+                <i class="check icon"></i> Fertig
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form to Add New Detail Entry -->
+    <form class="ui form" method="POST" action="{{ url_for('add_tip_detail', tiph_id=tip.tiph_id) }}">
+        {{ csrf_token()| safe }}
+        <div class="ui segment">
+            <h4 class="ui dividing header">Neuen Eintrag hinzufügen</h4>
+
+            <div class="ui grid">
+                <div class="row">
+                    <!-- Mitarbeiter -->
+                    <div class="eight wide column">
+                        <div class="field">
+                            <label>Mitarbeiter</label>
+                            <select name="username" class="ui fluid dropdown" required>
+                                {% if users_by_location[current_location] %}
+                                    <option disabled>— Benutzer in {{ current_location }} —</option>
+                                    {% for user in users_by_location[current_location] %}
+                                        <option value="{{ user.name }}">{{ user.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% for loc, users in users_by_location.items() if loc != current_location %}
+                                    {% if users %}
+                                        <option disabled>— Benutzer in {{ loc }} —</option>
+                                        {% for user in users %}
+                                            <option value="{{ user.name }}">{{ user.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dauer -->
+                    <div class="five wide column">
+                        <div class="field">
+                            <label>Dauer</label>
+                            <select name="duration" class="ui fluid dropdown" required>
+                                <option value="vormittag">Vormittag</option>
+                                <option value="nachmittag">Nachmittag</option>
+                                <option value="ganzer_tag" selected>Ganzer Tag</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Betrag -->
+                    <div class="three wide column">
+                        <div class="field" style="text-align: right;">
+                            <label style="float: right;">Betrag in CHF</label>
+                            <input type="number" step="0.05" name="amount_chf" placeholder="0.00" required style="text-align: right;" autofocus>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button Row -->
+                <div class="row">
+                    <div class="sixteen wide column right aligned">
+                        <button class="ui green button" type="submit">
+                            <i class="plus icon"></i>
+                            Hinzufügen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+
+
+    <!-- Existing Detail Entries -->
+    <div class="ui segment">
+        <div class="ui grid">
+            <div class="eight wide column">
+                <h4 class="ui dividing header">Bisherige Einträge</h4>
+            </div>
+            <div class="eight wide column right aligned" style="display: flex; align-items: center; justify-content: flex-end;">
+                <div style="font-size: 1.2em; font-weight: bold;">
+                    Tagestotal: CHF {{ "{:.2f}".format(total_amount) }}
+                </div>
+            </div>
+        </div>
+
+        {% if details %}
+        <table class="ui celled table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Mitarbeiter</th>
+                    <th style="width: 20%;">Dauer</th>
+                    <th style="width: 20%; text-align: right;">Betrag (CHF)</th>
+                    <th style="width: 10%;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in details %}
+                <tr>
+                    <td>
+                    {{ d.username }}
+                    {% if d.username in user_location_lookup %}
+                        <span style="color: #999;">({{ user_location_lookup[d.username] }})</span>
+                    {% endif %}
+                    </td>
+                    <td>{{ d.duration.value }}</td>
+                    <td style="text-align: right;">{{ "{:.2f}".format(d.amount_chf) }}</td>
+                    <td style="white-space: nowrap;">
+                        <button 
+                            type="button" 
+                            class="ui icon button red show-delete-modal" 
+                            title="Löschen"
+                            data-delete-url="{{ url_for('delete_tip_detail', tipd_id=d.tipd_id) }}">
+                            <i class="trash icon"></i>
+                        </button>
+                        <a href="{{ url_for('edit_tip_detail', tipd_id=d.tipd_id) }}" class="ui icon button blue" title="Bearbeiten">
+                            <i class="edit icon"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>Keine Einträge vorhanden.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Delete Confirmation Modal for TipH -->
+<div class="ui small modal" id="deleteHeaderModal">
+    <div class="header">Erfassung löschen</div>
+    <div class="content">
+        <p>Möchten Sie diese Trinkgelderfassung inklusive aller Einträge wirklich löschen?</p>
+    </div>
+    <div class="actions">
+        <form method="POST" id="deleteHeaderForm" action="">
+            {{ csrf_token()| safe }}
+            <button type="button" class="ui button deny">Abbrechen</button>
+            <button type="submit" class="ui red button">Löschen</button>
+        </form>
+    </div>
+</div>
+
+
+<!-- Delete Confirmation Modal -->
+<div class="ui small modal" id="deleteModal">
+    <div class="header">Eintrag löschen</div>
+    <div class="content">
+        <p>Möchten Sie diesen Eintrag wirklich löschen?</p>
+    </div>
+    <div class="actions">
+        <form method="POST" id="deleteForm" action="">
+            {{ csrf_token()| safe }}
+            <button type="button" class="ui button deny">Abbrechen</button>
+            <button type="submit" class="ui red button">Löschen</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    $('.ui.dropdown').dropdown();
+
+    // Modal for TipD
+    document.querySelectorAll('.show-delete-modal').forEach(button => {
+        button.addEventListener('click', function () {
+            const url = this.getAttribute('data-delete-url');
+            const form = document.getElementById('deleteForm');
+            form.action = url;
+            $('#deleteModal').modal('show');
+        });
+    });
+
+    // Modal for TipH
+    document.querySelectorAll('.show-header-delete-modal').forEach(button => {
+        button.addEventListener('click', function () {
+            const url = this.getAttribute('data-delete-url');
+            const form = document.getElementById('deleteHeaderForm');
+            form.action = url;
+            $('#deleteHeaderModal').modal('show');
+        });
+    });
+</script>
+
+
+<script>
+    $('.ui.dropdown').dropdown();
+</script>
+
+</body>
+</html>

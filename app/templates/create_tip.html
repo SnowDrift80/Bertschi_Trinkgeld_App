@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
+    <title>RP Trinkgelderfassung</title>
+
+    <!-- Fomantic UI CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+
+    <!-- jQuery and JS dependencies -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            height: calc(100% - 2cm - 1px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+{% include 'partials/topbar.html' %}
+
+<!-- Main Workspace -->
+<div class="workspace">
+
+    {% if existing_report %}
+        <a href="{{ url_for('edit_tip', tiph_id=existing_report.tiph_id) }}" class="ui huge primary button">
+            Trinkgeldabrechnung editieren
+        </a>
+    {% else %}
+        <a href="{{ url_for('create_tip') }}" class="ui huge green button">
+            Trinkgeldabrechnung erstellen
+        </a>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

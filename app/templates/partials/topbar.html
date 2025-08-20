@@ -1,0 +1,33 @@
+<!-- templates/partials/topbar.html -->
+<div class="ui segment top-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 0.8rem 1.2rem;">
+
+    <!-- Logo -->
+    <div style="flex-shrink: 0;">
+        <a href="{{ url_for('dashboard') }}">
+            <img src="{{ url_for('static', filename='images/recycling-paradies_logo.jpg') }}" alt="R Logo" style="height: 48px;">
+        </a>
+    </div>
+
+    <!-- Title -->
+    <div style="flex: 1; text-align: center; font-size: 1.8rem; font-weight: bold; color: darkslategray;">
+        {{ topbar_title }}
+    </div>
+
+    <!-- Date + User Section -->
+    <div style="display: flex; align-items: center; gap: 1rem; color: darkslategray;">
+        <div>{{ current_date }}</div>
+        {% if user %}
+            <div>{{ user.name }} – {{ user.location }}</div>
+            {% if user.role in ['admin', 'superadmin'] %}
+                <a href="{{ url_for('admin') }}" title="Adminbereich">
+                    <i class="cog icon large link"></i>
+                </a>
+            {% endif %}
+            <form action="{{ url_for('logout') }}" method="post" style="display: inline;">
+                {{ csrf_token()| safe }}
+                <button class="ui mini button" type="submit">Abmelden</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+<div class="ui divider" style="margin: 0;"></div>

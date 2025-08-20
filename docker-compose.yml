@@ -1,0 +1,37 @@
+name: trinkgeld
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: trinkgeld_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # accessible on host as 5433
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  trinkgeld_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trinkgeld_app
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5012:5012"
+
+volumes:
+  pgdata:

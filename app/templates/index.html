@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trinkgeld Erfassung</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
+    <!-- JQuery - load first -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <!-- HTMX -->
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+    <!-- Fomantic-UI JavaScript -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+        
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            height: calc(100% - 2cm - 1px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'partials/topbar.html' %}
+
+    <!-- Workspace -->
+    <div class="workspace">
+        <div id="login-container" class="ui raised very padded text container segment" style="max-width: 400px;">
+            <h2 class="ui header">Anmeldung</h2>
+            <form class="ui form" action="/login" method="post">
+                {{ csrf_token()| safe }}
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" name="email" required autocomplete="off" autofocus>
+                </div>
+                <div class="field">
+                    <label>Passwort</label>
+                    <input type="password" name="password" required autocomplete="new-password">
+                </div>
+                <button class="ui primary button" type="submit">anmelden</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Eintrag bearbeiten</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+</head>
+<body>
+
+{% include 'partials/topbar.html' %}
+
+<div class="ui container" style="margin-top: 2rem;">
+    <div class="ui segment">
+        <h3 class="ui dividing header">Eintrag bearbeiten – {{ tip.location }}</h3>
+
+        <form class="ui form" method="POST">
+            {{ csrf_token()| safe }}
+            <div class="ui grid">
+                <div class="row">
+                    <!-- Mitarbeiter -->
+                    <div class="eight wide column">
+                        <div class="field">
+                            <label>Mitarbeiter</label>
+                            <select name="username" class="ui fluid dropdown" required>
+                                <option disabled>— Benutzer am Standort —</option>
+                                {% for user in users_current_loc %}
+                                    <option value="{{ user.name }}" {% if user.name == detail.username %}selected{% endif %}>{{ user.name }}</option>
+                                {% endfor %}
+                                <option disabled>— Benutzer anderer Standorte —</option>
+                                {% for user in users_other_locs %}
+                                    <option value="{{ user.name }}" {% if user.name == detail.username %}selected{% endif %}>{{ user.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dauer -->
+                    <div class="five wide column">
+                        <div class="field">
+                            <label>Dauer</label>
+                            <select name="duration" class="ui fluid dropdown" required>
+                                <option value="vormittag" {% if detail.duration.name == "vormittag" %}selected{% endif %}>Vormittag</option>
+                                <option value="nachmittag" {% if detail.duration.name == "nachmittag" %}selected{% endif %}>Nachmittag</option>
+                                <option value="ganzer_tag" {% if detail.duration.name == "ganzer_tag" %}selected{% endif %}>Ganzer Tag</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Betrag -->
+                    <div class="three wide column">
+                        <div class="field" style="text-align: right;">
+                            <label style="float: right;">Betrag in CHF</label>
+                            <input type="number" step="0.05" name="amount_chf" placeholder="0.00" required
+                                value="{{ '%.2f' % detail.amount_chf }}" style="text-align: right;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button Row -->
+                <div class="row">
+                    <div class="sixteen wide column">
+                        <button class="ui primary button" type="submit">Speichern</button>
+                        <a href="{{ url_for('edit_tip', tiph_id=tip.tiph_id) }}" class="ui button">Zurück</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    $('.ui.dropdown').dropdown();
+</script>
+
+</body>
+</html>

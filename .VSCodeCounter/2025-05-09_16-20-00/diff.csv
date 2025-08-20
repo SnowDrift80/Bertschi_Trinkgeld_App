@@ -1,0 +1,34 @@
+"filename", "language", "Python", "Docker", "Ignore", "YAML", "pip requirements", "HTML", "comment", "blank", "total"
+"/media/ironwolf/python/projects/bertschi/scale/.dockerignore", "Ignore", 0, 0, 23, 0, 0, 0, 5, 5, 33
+"/media/ironwolf/python/projects/bertschi/scale/Dockerfile", "Docker", 0, 17, 0, 0, 0, 0, 9, 9, 35
+"/media/ironwolf/python/projects/bertschi/scale/app/models.py", "Python", 4, 0, 0, 0, 0, 0, 0, 0, 4
+"/media/ironwolf/python/projects/bertschi/scale/app/routes.py", "Python", 302, 0, 0, 0, 0, 0, 11, 98, 411
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/admin.html", "HTML", 0, 0, 0, 0, 0, 7, 0, 2, 9
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/container_type_list_import.html", "HTML", 0, 0, 0, 0, 0, -8, 0, 5, -3
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/location_list_import.html", "HTML", 0, 0, 0, 0, 0, -8, 0, 3, -5
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/masterdata_import.html", "HTML", 0, 0, 0, 0, 0, -15, 0, 1, -14
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/material_category_list_import.html", "HTML", 0, 0, 0, 0, 0, -6, 0, 5, -1
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/masterdata/vehicle_list_import.html", "HTML", 0, 0, 0, 0, 0, -3, 0, 4, 1
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/users/partials/user_form.html", "HTML", 0, 0, 0, 0, 0, 8, 0, 2, 10
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/admin/users/user_management.html", "HTML", 0, 0, 0, 0, 0, -15, 0, 0, -15
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/dashboard.html", "HTML", 0, 0, 0, 0, 0, 49, -2, 26, 73
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/index.html", "HTML", 0, 0, 0, 0, 0, -14, -2, -1, -17
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/partials/material_field.html", "HTML", 0, 0, 0, 0, 0, 18, 0, 1, 19
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/partials/sku_field.html", "HTML", 0, 0, 0, 0, 0, 17, 0, 1, 18
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/partials/topbar.html", "HTML", 0, 0, 0, 0, 0, 23, 1, 1, 25
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/advanced_search_results.html", "HTML", 0, 0, 0, 0, 0, 107, 6, 15, 128
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/complete_transaction.html", "HTML", 0, 0, 0, 0, 0, 12, 0, 7, 19
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/edit_transaction.html", "HTML", 0, 0, 0, 0, 0, 20, 0, -2, 18
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/batch_print_modal.html", "HTML", 0, 0, 0, 0, 0, 44, 1, 3, 48
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/completed_transactions_table.html", "HTML", 0, 0, 0, 0, 0, -37, 1, -1, -37
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/incomplete_transactions_table.html", "HTML", 0, 0, 0, 0, 0, 2, 0, 0, 2
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/partials/search_modal.html", "HTML", 0, 0, 0, 0, 0, 41, 1, 6, 48
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/start_transaction.html", "HTML", 0, 0, 0, 0, 0, 119, -2, 14, 131
+"/media/ironwolf/python/projects/bertschi/scale/app/templates/transactions/transaction_selection_modal.html", "HTML", 0, 0, 0, 0, 0, 75, 2, 11, 88
+"/media/ironwolf/python/projects/bertschi/scale/config.py", "Python", 3, 0, 0, 0, 0, 0, 4, 1, 8
+"/media/ironwolf/python/projects/bertschi/scale/docker-compose.yml", "YAML", 0, 0, 0, 31, 0, 0, 0, 5, 36
+"/media/ironwolf/python/projects/bertschi/scale/requirements.txt", "pip requirements", 0, 0, 0, 0, 28, 0, 0, 1, 29
+"/media/ironwolf/python/projects/bertschi/scale/seed_admin.py", "Python", 20, 0, 0, 0, 0, 0, 1, 6, 27
+"/media/ironwolf/python/projects/bertschi/scale/seed_amin.py", "Python", -20, 0, 0, 0, 0, 0, -1, -6, -27
+"/media/ironwolf/python/projects/bertschi/scale/setup_db.py", "Python", 1, 0, 0, 0, 0, 0, 0, -1, 0
+"Total", "-", 310, 17, 23, 31, 28, 436, 35, 221, 1101

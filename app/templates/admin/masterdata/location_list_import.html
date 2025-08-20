@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Muldentypliste aktualisieren – Bertschi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'partials/topbar.html' %}
+
+
+    <div class="workspace">
+        <form class="ui form" action="{{ url_for('import_location_list_upload') }}" method="post" enctype="multipart/form-data">
+            {{ csrf_token()| safe }}
+            <div class="field">
+                <label>Excel-Datei (nur .xlsx)</label>
+                <input type="file" name="file" accept=".xlsx" required>
+            </div>
+            <button class="ui primary button" type="submit">Importieren</button>
+        </form>
+        
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="ui message">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <hr style="margin-top: 3rem;">
+
+        <a href="{{ url_for('masterdata_import') }}" class="ui basic button">
+            <i class="arrow left icon"></i>
+            Zurück
+        </a>
+
+        <div style="display: flex; align-items: center; gap: 2rem; margin-top: 2rem; margin-left: 1rem; margin-right: 1rem;">
+            <h3 class="ui header" style="margin: 0;">Aktuelle Standorte</h3>
+            
+            <form action="{{ url_for('export_location_list') }}" method="get">
+                {{ csrf_token()| safe }}
+                <button class="ui secondary button" type="submit">
+                    <i class="download icon"></i> Standortliste Download
+                </button>
+            </form>
+        </div>
+    
+
+
+
+        <table class="ui celled table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Standort</th>
+                    <th>Entität</th>
+                    <th>Strasse</th>
+                    <th>Ort</th>
+                    <th>Telefon</th>
+                    <th>E-Mail</th>
+                    <th>Website</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in locations %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ entry.location }}</td>
+                    <td>{{ entry.entity or "" }}</td>
+                    <td>{{ entry.street_no or "" }}</td>
+                    <td>{{ entry.zip_place or "" }}</td>
+                    <td>{{ entry.phone or "" }}</td>
+                    <td>{{ entry.email or "" }}</td>
+                    <td>
+                        {% if entry.url %}
+                            <a href="{{ entry.url }}" target="_blank">{{ entry.url }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+
+    </div>
+
+</body>
+</html>

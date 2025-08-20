@@ -1,0 +1,54 @@
+<form class="ui form" method="post" action="{{ url_for('user_management') }}" autocomplete="off">
+    {{ csrf_token()| safe }}
+    {% if user_to_edit %}
+        <input type="hidden" name="user_id" value="{{ user_to_edit.id }}">
+    {% endif %}
+
+    <div class="field">
+        <label>Name</label>
+        <input type="text" name="name" placeholder="Name" required value="{{ user_to_edit.name if user_to_edit else '' }}">
+    </div>
+    <div class="field">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="Email" required value="{{ user_to_edit.email if user_to_edit else '' }}" autocomplete="off">
+    </div>
+    <div class="field">
+        <label>Passwort</label>
+        <input type="password" name="password" placeholder="Neues Passwort" autocomplete="new-password">
+    </div>
+
+    <div class="field">
+        <label>Standort</label>
+        <select class="ui dropdown" name="location" required>
+            <option value="">-- Bitte wählen --</option>
+            {% for loc in locations %}
+                <option value="{{ loc.location }}"
+                    {% if user_to_edit and user_to_edit.location == loc.location %}selected{% endif %}>
+                    {{ loc.location }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="field">
+        <label>Rolle</label>
+        <select class="ui dropdown" name="role">
+            <option value="user" {% if user_to_edit and user_to_edit.role == 'user' %}selected{% endif %}>Benutzer</option>
+
+            {% if user.role == 'superadmin' %}
+                <option value="admin" {% if user_to_edit and user_to_edit.role == 'admin' %}selected{% endif %}>Administrator</option>
+            {% endif %}
+
+            {% if user.role == 'superadmin' %}
+                <option value="superadmin" {% if user_to_edit and user_to_edit.role == 'superadmin' %}selected{% endif %}>Superadministrator</option>
+            {% endif %}
+        </select>
+    </div>
+
+    <button class="ui primary button" type="submit">
+        {% if user_to_edit %}Änderungen speichern
+        <button class="ui button" type="button" onclick="discardChanges()">Änderungen verwerfen</button>
+        {% else %}Benutzer erstellen{% endif %}
+    </button>
+    
+</form>

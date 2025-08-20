@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
+    <title>Stammdaten Import – Bertschi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>    
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'partials/topbar.html' %}
+
+
+    <!-- Divider 
+    <div class="ui divider" style="margin: 0;"></div> -->
+
+    <!-- Workspace -->
+    <div class="workspace">
+        <h3 class="ui header"><a href="{{ url_for('import_location_list') }}">Standortliste aktualisieren</a></h3>
+    </div>
+
+    <hr style="margin-top: 3rem; margin-left: 1rem; margin-right: 1rem;">
+
+    <a href="{{ url_for('admin') }}" class="ui basic button" style="margin-left: 1rem;">
+        <i class="arrow left icon"></i>
+        Zurück zum Admin Bereich
+    </a>
+
+</body>
+</html>

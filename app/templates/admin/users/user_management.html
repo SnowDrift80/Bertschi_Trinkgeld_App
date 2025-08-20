@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
+    <title>Benutzerverwaltung – Bertschi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/semantic.min.css') }}">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            padding: 2rem;
+        }
+    </style>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+</head>
+<body>
+
+    {% include 'partials/topbar.html' %}
+
+    <!-- Divider 
+    <div class="ui divider" style="margin: 0;"></div> -->
+
+    <!-- Workspace -->
+    <div class="workspace">
+
+        <h3 class="ui header">Benutzer erstellen / bearbeiten</h3>
+
+        <div id="user-form">
+            {% include 'admin/users/partials/user_form.html' %}
+        </div>
+        
+        
+
+        <h3 class="ui header" style="margin-top: 3rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>Alle Benutzer</span>
+
+        <form class="ui action input"
+                hx-get="{{ url_for('search_users') }}"
+                hx-target="#user-table-body"
+                hx-swap="innerHTML"
+                hx-push-url="false">
+            <input id="user-search"
+                type="text"
+                name="q"
+                placeholder="Name oder E-Mail suchen..."
+                autocomplete="off"
+                hx-trigger="keyup changed delay:300ms">
+            <button class="ui primary button" type="submit">
+            <i class="search icon"></i> Suchen
+            </button>
+        </form>
+        </h3>
+
+        <table class="ui celled table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Ort</th>
+                    <th>Rolle</th>
+                    <th class="center aligned">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body">
+                {% for u in users %}
+                <tr hx-get="{{ url_for('get_user', user_id=u.id) }}"
+                    hx-target="#user-form"
+                    hx-swap="innerHTML"
+                    style="cursor: pointer;">
+                    <td>{{ u.name }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.location }}</td>
+                    <td>{{ u.role }}</td>
+                    <td class="center aligned">
+                        <a href="#" hx-get="{{ url_for('get_user', user_id=u.id) }}" hx-target="#user-form" hx-swap="innerHTML">Bearbeiten</a>
+                        |
+                        <button class="ui red mini button" type="button" onclick="showDeactivateModal('{{ url_for('deactivate_user', user_id=u.id) }}')">
+                            Löschen
+                        </button>
+                    </td>
+                </tr>
+                            {% endfor %}
+            </tbody>
+        </table>
+
+        <hr style="margin-top: 3rem;">
+        <a href="{{ url_for('admin') }}" class="ui basic button">
+            <i class="arrow left icon"></i>
+            Zurück
+        </a>
+    </div>
+
+    <div class="ui tiny modal" id="confirm-deactivate-modal">
+        <div class="header">Benutzer löschen</div>
+        <div class="content">
+          <p>Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?</p>
+        </div>
+        <div class="actions">
+          <div class="ui cancel button">Abbrechen</div>
+          <form id="deactivate-form" method="post" style="display: inline;">
+            {{ csrf_token()| safe }}
+            <button class="ui red button" type="submit">Löschen</button>
+          </form>
+        </div>
+    </div>
+
+    <div class="ui tiny modal" id="email-exists-modal">
+        <div class="header">Fehler</div>
+        <div class="content">
+            <p>Ein Benutzer mit dieser E-Mail-Adresse existiert bereits. Bitte verwenden Sie eine andere E-Mail.</p>
+        </div>
+        <div class="actions">
+            <div class="ui ok button">OK</div>
+        </div>
+    </div>
+
+
+    <script>
+        function showDeactivateModal(actionUrl) {
+            const form = document.getElementById('deactivate-form');
+            form.action = actionUrl;
+            $('#confirm-deactivate-modal')
+                .modal({
+                    closable: false
+                })
+                .modal('show');
+        }
+    </script>
+
+    <script>
+        function discardChanges() {
+            location.reload();
+        }
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                {% if category == "email_exists" %}
+                $('#email-exists-modal').modal('show');
+                {% endif %}
+            {% endfor %}
+            {% endwith %}
+        });
+    </script>
+
+    
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
+    <title>RP Trinkgelderfassung</title>
+    <!-- jQuery (must be loaded first) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+    
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .top-bar {
+            height: 2cm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #ccc;
+        }
+        .workspace {
+            height: calc(100% - 2cm - 1px);
+            display: flex;
+            align-items: flex-start;
+            flex-direction: column;
+            padding: 3rem 1rem;
+        }
+        /* Ensure the button is visible and styled correctly */
+        .ui.basic.button {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: #000;
+            font-size: 16px;
+            margin-top: 2rem;
+            border-radius: 5px;
+        }
+        .ui.basic.button:hover {
+            background-color: #ddd;
+        }        
+    </style>
+</head>
+<body>
+
+{% include 'partials/topbar.html' %}
+
+
+    <!-- Admin Workspace -->
+    <div class="workspace">
+        {% if user.role == 'superadmin' %}
+            <h3 class="ui header" style="padding-left: 1rem;">
+                <a href="{{ url_for('masterdata_import') }}">Stammdaten aktualisieren</a>
+            </h3>
+        {% endif %}
+
+        <h3 class="ui header" style="padding-left: 1rem;">
+            <a href="{{ url_for('user_management') }}">Benutzerverwaltung</a>
+        </h3>
+
+        <hr style="margin-top: 3rem; border: 1px solid rgb(230, 230, 230); display: block; width: 100%;">
+
+        <a href="{{ url_for('dashboard') }}" class="ui basic button" style="margin-left: 1rem;">
+            <i class="arrow left icon"></i>
+            Zurück zur Erfassung
+        </a>    
+
+    </div>
+</body>
+</html>

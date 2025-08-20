@@ -1,0 +1,32 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.Python
+env/
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Editor & system files
+.vscode/
+.idea/
+.DS_Store
+
+# Output & build artifacts
+*.log
+*.sqlite3
+*.db
+*.tar
+*.img
+*.iso
+*.zip
+*.tgz
+*.gz
+
+# Docker artifacts
+scale_app.tar
