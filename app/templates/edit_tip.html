@@ -50,29 +50,45 @@
 
             <div class="ui grid">
                 <div class="row">
-                    <!-- Mitarbeiter -->
-                    <div class="eight wide column">
-                        <div class="field">
-                            <label>Mitarbeiter</label>
-                            <select name="username" class="ui fluid dropdown" required>
+                <!-- Mitarbeiter -->
+                <div class="eight wide column">
+                    <div class="field">
+                        <label>Mitarbeiter</label>
+
+                        <div id="new-entry-user-dropdown" class="ui fluid search selection clearable dropdown">
+                        <!-- Keep the same POST field name -->
+                        <input type="hidden" name="username" value="">
+                        <i class="dropdown icon"></i>
+                        <input class="search" autocomplete="off" tabindex="0">
+                        <div class="default text">— Benutzer auswählen —</div>
+
+                            <div class="menu">
                                 {% if users_by_location[current_location] %}
-                                    <option disabled>— Benutzer in {{ current_location }} —</option>
-                                    {% for user in users_by_location[current_location] %}
-                                        <option value="{{ user.name }}">{{ user.name }}</option>
-                                    {% endfor %}
+                                <div class="header">Benutzer in {{ current_location }}</div>
+                                {% for u in users_by_location[current_location] %}
+                                    <div class="item" data-value="{{ u.name }}">
+                                    {{ u.name }}
+                                    {% if u.username %}<span style="opacity:.6;">({{ u.username }})</span>{% endif %}
+                                    </div>
+                                {% endfor %}
                                 {% endif %}
 
                                 {% for loc, users in users_by_location.items() if loc != current_location %}
-                                    {% if users %}
-                                        <option disabled>— Benutzer in {{ loc }} —</option>
-                                        {% for user in users %}
-                                            <option value="{{ user.name }}">{{ user.name }}</option>
-                                        {% endfor %}
-                                    {% endif %}
+                                {% if users %}
+                                    <div class="header">Benutzer in {{ loc }}</div>
+                                    {% for u in users %}
+                                    <div class="item" data-value="{{ u.name }}">
+                                        {{ u.name }}
+                                        {% if u.username %}<span style="opacity:.6;">({{ u.username }})</span>{% endif %} — {{ u.location }}
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
                                 {% endfor %}
-                            </select>
+                            </div>
                         </div>
                     </div>
+                </div>
+
 
                     <!-- Dauer -->
                     <div class="five wide column">

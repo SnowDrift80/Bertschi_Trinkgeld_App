@@ -45,8 +45,8 @@
             <form class="ui form" action="/login" method="post">
                 {{ csrf_token()| safe }}
                 <div class="field">
-                    <label>Email</label>
-                    <input type="email" name="email" required autocomplete="off" autofocus>
+                    <label>Benutzername</label>
+                    <input name="email" required autocomplete="off" autofocus>
                 </div>
                 <div class="field">
                     <label>Passwort</label>

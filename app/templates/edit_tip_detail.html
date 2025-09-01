@@ -23,28 +23,36 @@
                     <div class="eight wide column">
                         <div class="field">
                             <label>Mitarbeiter</label>
-                            <select name="username" class="ui fluid dropdown" required>
-                                <option disabled>— Benutzer am Standort —</option>
-                                {% for user in users_current_loc %}
-                                    <option value="{{ user.name }}" {% if user.name == detail.username %}selected{% endif %}>{{ user.name }}</option>
-                                {% endfor %}
-                                <option disabled>— Benutzer anderer Standorte —</option>
-                                {% for user in users_other_locs %}
-                                    <option value="{{ user.name }}" {% if user.name == detail.username %}selected{% endif %}>{{ user.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                            <div id="edit-user-dropdown" class="ui fluid search selection clearable dropdown">
+                            <!-- Keep the same POST field name as before -->
+                            <input type="hidden" name="username" value="{{ detail.username or '' }}">
+                            <i class="dropdown icon"></i>
+                            <input class="search" autocomplete="off" tabindex="0">
+                            <div class="default text">— Benutzer auswählen —</div>
+                                <div class="menu">
+                                    {% if users_current_loc %}
+                                    <div class="header">Benutzer am Standort</div>
+                                    {% for u in users_current_loc %}
+                                        <div class="item"
+                                            data-value="{{ u.name }}">
+                                        {{ u.name }}
+                                        {% if u.username %}<span style="opacity:.6;">({{ u.username }})</span>{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    {% endif %}
 
-                    <!-- Dauer -->
-                    <div class="five wide column">
-                        <div class="field">
-                            <label>Dauer</label>
-                            <select name="duration" class="ui fluid dropdown" required>
-                                <option value="vormittag" {% if detail.duration.name == "vormittag" %}selected{% endif %}>Vormittag</option>
-                                <option value="nachmittag" {% if detail.duration.name == "nachmittag" %}selected{% endif %}>Nachmittag</option>
-                                <option value="ganzer_tag" {% if detail.duration.name == "ganzer_tag" %}selected{% endif %}>Ganzer Tag</option>
-                            </select>
+                                    {% if users_other_locs %}
+                                    <div class="header">Weitere Standorte</div>
+                                    {% for u in users_other_locs %}
+                                        <div class="item"
+                                            data-value="{{ u.name }}">
+                                        {{ u.name }}
+                                        {% if u.username %}<span style="opacity:.6;">({{ u.username }})</span>{% endif %} — {{ u.location }}
+                                        </div>
+                                    {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -73,6 +81,20 @@
 <script>
     $('.ui.dropdown').dropdown();
 </script>
+
+<script>
+  // Initialize ALL dropdowns as before
+  $('.ui.dropdown').dropdown();
+
+  // Fine-tune the user dropdown: searchable, clearable, exact text search
+  $('#edit-user-dropdown').dropdown({
+    clearable: true,
+    fullTextSearch: 'exact',
+    // Ensure preselection works even if the value contains spaces/umlauts
+    preserveHTML: true
+  });
+</script>
+
 
 </body>
 </html>

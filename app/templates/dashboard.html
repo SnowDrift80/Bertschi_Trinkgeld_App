@@ -14,6 +14,8 @@
     <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
 
 
+    {% include 'partials/topbar.html' %} 
+
 
 
     <style>
@@ -21,6 +23,7 @@
             height: 100%;
             margin: 0;
         }
+        
         .top-bar {
             height: 2cm;
             display: flex;
@@ -29,7 +32,7 @@
             padding: 0 1rem;
             background-color: #f9fafb;
             border-bottom: 1px solid #ccc;
-        }
+        } 
         .workspace {
             height: calc(100% - 2cm - 1px);
             display: flex;
@@ -37,12 +40,14 @@
             align-items: center;
             padding-top: 2rem;
             overflow-y: auto;
-        }
+        } 
     </style>
+
+
 </head>
 <body>
 
-{% include 'partials/topbar.html' %}
+
 
 <!-- Main Workspace -->
     <div class="workspace">
@@ -99,21 +104,39 @@
                     <table class="ui celled table">
                         <thead>
                             <tr>
-                                <th style="width: 20%;">Datum</th>
-                                <th style="width: 30%;">Erstellt von</th>
-                                <th style="width: 30%;">Standort</th>
+                                <th style="width: 18%;">Datum</th>
+                                <th style="width: 26%;">Erstellt von</th>
+                                <th style="width: 26%;">Standort</th>
+                                {% if user.role == 'superadmin' %}
                                 <th style="width: 20%; text-align: right;">Trinkgeld (CHF)</th>
+                                <th style="width: 10%;">Aktion</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for entry in tiph_entries %}
                             <tr>
-                                <td style="width: 20%;">{{ entry.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
-                                <td style="width: 30%;">{{ entry.username }}</td>
-                                <td style="width: 30%;">{{ entry.location }}</td>
+                                <td style="width: 18%;">{{ entry.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td style="width: 26%;">{{ entry.username }}</td>
+                                <td style="width: 26%;">{{ entry.location }}</td>
+                                {% if user.role == 'superadmin' %}
                                 <td style="width: 20%; text-align: right;">
-                                    {{ "%.2f"|format(tip_totals[entry.tiph_id]) }}
+                                {{ "%.2f"|format(tip_totals[entry.tiph_id]) }}
                                 </td>
+                                <td style="width: 10%; white-space: nowrap; text-align: right;">
+                                <a href="{{ url_for('edit_tip', tiph_id=entry.tiph_id) }}"
+                                    class="ui icon button blue" title="Bearbeiten">
+                                    <i class="pencil alternate icon"></i>
+                                </a>
+
+                                <button type="button"
+                                        class="ui icon button red show-header-delete-modal"
+                                        title="Löschen"
+                                        data-delete-url="{{ url_for('delete_tip', tiph_id=entry.tiph_id) }}">
+                                    <i class="trash icon"></i>
+                                </button>
+                                </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -128,6 +151,35 @@
 
     </div>
 
+    <!-- Delete Confirmation Modal for TipH on dashboard -->
+    <div class="ui small modal" id="deleteHeaderModalDashboard">
+        <div class="header">Erfassung löschen</div>
+        <div class="content">
+            <p>Möchten Sie diese Trinkgelderfassung inklusive aller Einträge wirklich löschen?</p>
+        </div>
+        <div class="actions">
+            <form method="POST" id="deleteHeaderFormDashboard" action="">
+            {{ csrf_token()| safe }}
+            <button type="button" class="ui button deny">Abbrechen</button>
+            <button type="submit" class="ui red button">Löschen</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // Hook dashboard delete buttons
+    document.querySelectorAll('.show-header-delete-modal').forEach(btn => {
+        btn.addEventListener('click', function () {
+        const url = this.getAttribute('data-delete-url');
+        const form = document.getElementById('deleteHeaderFormDashboard');
+        form.action = url;
+        $('#deleteHeaderModalDashboard').modal('show');
+        });
+    });
+    </script>
+
+
+    <!-- Export Modal for superadmin -->
     {% if user.role == 'superadmin' %}
         <!-- Export Modal -->
         <div class="ui modal" id="exportModal">
@@ -147,11 +199,31 @@
                         <label>Standort</label>
                         <select name="location" class="ui dropdown" id="location_dropdown">
                         <option value="">— Standort auswählen —</option>
-                        {% for loc in all_locations %}
+                        {% for loc in full_locations_list %}
                             <option value="{{ loc.location }}">{{ loc.location }}</option>
                         {% endfor %}
                         </select>
                     </div>
+
+                    <div class="field">
+                    <label>Benutzer (optional)</label>
+                    <div id="export-user-dropdown" class="ui fluid search selection clearable dropdown">
+                        <input type="hidden" name="user_id" value="">
+                        <i class="dropdown icon"></i>
+                        <input class="search" autocomplete="off" tabindex="0">
+                        <div class="default text">Alle Benutzer</div>
+                        <div class="menu">
+                        {# initial server render shows all users under "Weitere Standorte" #}
+                        {% if other_location_users %}
+                            <div class="header">Alle Standorte</div>
+                            {% for u in other_location_users %}
+                            <div class="item" data-value="{{ u.id }}">{{ u.name }} ({{ u.username }}) — {{ u.location }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        </div>
+                    </div>
+                    </div>
+
 
                     <div class="two fields">
                         <div class="field">
@@ -176,44 +248,101 @@
         $('.ui.dropdown').dropdown();
         $('.ui.checkbox').checkbox();
 
-        // Checkbox manually clicked
-        $('#all_locations').on('change', function () {
-            if ($(this).is(':checked')) {
-                // Clear dropdown if checkbox is checked
-                $('#location_dropdown')
-                    .val('')
-                    .dropdown('clear');
+        function rebuildUserDropdown(users, headerText) {
+            const $dd = $('#export-user-dropdown');
+            const $menu = $dd.find('.menu');
+            $menu.empty();
+
+            if (headerText) {
+            $menu.append(`<div class="header">${headerText}</div>`);
             }
+
+            if (users.length === 0) {
+            $menu.append('<div class="item disabled">Keine Benutzer gefunden</div>');
+            } else {
+            users.forEach(u => {
+                const label = `${u.name} (${u.username}) — ${u.location}`;
+                $menu.append(`<div class="item" data-value="${u.id}">${label}</div>`);
+            });
+            }
+
+            // clear current selection and refresh
+            $dd.dropdown('clear');
+            $dd.dropdown('refresh');
+        }
+
+        async function refreshUsersForExport() {
+            const allChecked = $('#all_locations').is(':checked');
+            const loc = $('#location_dropdown').val() || '';
+            const params = new URLSearchParams();
+            params.set('all', allChecked ? '1' : '0');
+            if (!allChecked && loc) params.set('location', loc);
+
+            try {
+            const resp = await fetch(`/api/users-for-export?${params.toString()}`, { credentials: 'same-origin' });
+            const users = await resp.json();
+            const header = allChecked ? 'Alle Standorte' : (loc ? `Standort: ${loc}` : 'Benutzer');
+            rebuildUserDropdown(users, header);
+            } catch (e) {
+            rebuildUserDropdown([], 'Fehler beim Laden');
+            console.error(e);
+            }
+        }
+
+        // Existing handlers (enhanced)
+        $('#all_locations').on('change', function () {
+            const checked = $(this).is(':checked');
+            if (checked) {
+            $('#location_dropdown').val('').dropdown('clear');
+            }
+            refreshUsersForExport();
         });
 
-        // Dropdown manually changed
         $('#location_dropdown').on('change', function () {
             const val = $(this).val();
             if (val) {
-                // Uncheck checkbox if a location is selected
-                $('#all_locations')
-                    .prop('checked', false)
-                    .closest('.ui.checkbox')
-                    .checkbox('set unchecked');
+            $('#all_locations').prop('checked', false).closest('.ui.checkbox').checkbox('set unchecked');
             }
+            refreshUsersForExport();
         });
 
-        // Reset every time modal is opened
+        // Modal open: set defaults and load ALL users
         $('#exportModal').modal({
             onShow: function () {
-                // Set checkbox to checked by default
-                $('#all_locations')
-                    .prop('checked', true)
-                    .closest('.ui.checkbox')
-                    .checkbox('set checked');
+            $('#all_locations').prop('checked', true).closest('.ui.checkbox').checkbox('set checked');
+            $('#location_dropdown').val('').dropdown('clear');
 
-                // Clear dropdown
-                $('#location_dropdown')
-                    .val('')
-                    .dropdown('clear');
+            // init user dropdown if not already
+            $('#export-user-dropdown').dropdown({
+                clearable: true,
+                fullTextSearch: 'exact',
+                forceSelection: false,
+                selectOnKeydown: false
+            });
+
+            refreshUsersForExport();
             }
         });
+
+        // Keep your create button enable/disable logic:
+        $(document).ready(function () {
+            const $dropdown = $('select[name="location"]');
+            const $createButton = $('#createButton');
+
+            function updateButtonState() {
+            const selected = $dropdown.val();
+            if (!selected) {
+                $createButton.addClass('disabled');
+            } else {
+                $createButton.removeClass('disabled');
+            }
+            }
+
+            updateButtonState();
+            $dropdown.on('change', updateButtonState);
+        });
     </script>
+
 
     <script>
         $(document).ready(function () {

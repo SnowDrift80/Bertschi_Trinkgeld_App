@@ -84,6 +84,32 @@ def setup_routes(app):
             return render_template("index.html", topbar_title="Trinkgelderfassung - Login", current_date=AppDate.get_current_date_header(), user=None)
 
 
+    @app.get("/api/users-for-export")
+    @login_required
+    def api_users_for_export():
+        # Expected query params:
+        #   all=1|0  (1 => all locations)
+        #   location=<code> (only used when all=0 and provided)
+        get_all = request.args.get("all") == "1"
+        location = request.args.get("location")
+
+        q = User.query
+        if not get_all and location:
+            q = q.filter(User.location == location)
+
+        users = q.order_by(User.location.asc(), User.name.asc()).all()
+
+        return jsonify([
+            {
+                "id": u.id,
+                "name": u.name,           # or u.full_name
+                "username": u.email,
+                "location": u.location,
+            }
+            for u in users
+        ])
+
+
     @app.route("/dashboard")
     @login_required
     def dashboard():
@@ -96,6 +122,15 @@ def setup_routes(app):
 
         # Default location is the user's own location
         selected_location = session.get("selected_location", user.location)
+
+        # === Initial lists for export modal: show ALL users by default (superadmin stats) ===
+        all_users_sorted = (
+            User.query
+                .order_by(User.location.asc(), User.name.asc())
+                .all()
+        )
+        current_location_users = []  # empty "current" section by default
+        other_location_users = all_users_sorted
 
         # Step 1: Get all TipH reports for today
         reports_today = (
@@ -117,6 +152,11 @@ def setup_routes(app):
             .all()
         )
 
+        full_locations_list = (
+            LocationList.query
+            .order_by(LocationList.location)
+            .all()
+        )
 
         seven_days_ago = today - timedelta(days=6)
 
@@ -134,9 +174,7 @@ def setup_routes(app):
         if user.role == "superadmin":
             tiph_entries = (
                 TipH.query
-                .filter(
-                    db.func.date(TipH.timestamp) >= seven_days_ago
-                )
+                .filter(db.func.date(TipH.timestamp) >= seven_days_ago)
                 .order_by(TipH.timestamp.desc(), TipH.location)
                 .all()
             )
@@ -151,13 +189,12 @@ def setup_routes(app):
                 .all()
             )
 
-
         tip_totals = {
             tip.tiph_id: db.session.query(func.coalesce(func.sum(TipD.amount_chf), 0))
                 .filter_by(tiph_id=tip.tiph_id)
                 .scalar()
             for tip in tiph_entries
-        }        
+        }
 
         return render_template(
             "dashboard.html",
@@ -168,7 +205,11 @@ def setup_routes(app):
             tiph_entries=tiph_entries,
             selected_location=selected_location,
             all_locations=all_locations,
-            tip_totals=tip_totals
+            full_locations_list=full_locations_list,
+            tip_totals=tip_totals,
+            # lists for the modal user dropdown (initially "all users")
+            current_location_users=current_location_users,
+            other_location_users=other_location_users,
         )
 
     
@@ -529,6 +570,8 @@ def setup_routes(app):
         return redirect(url_for("dashboard"))
 
 
+
+
     @app.route("/export-tip-data", methods=["POST"])
     @login_required
     def export_tip_data():
@@ -536,6 +579,9 @@ def setup_routes(app):
         to_date = request.form.get("date_to")
         all_locations = request.form.get("all_locations") == "on"
         selected_location = request.form.get("location")
+        # NEW: user filter
+        user_id_raw = (request.form.get("user_id") or "").strip()
+        user_id = int(user_id_raw) if user_id_raw.isdigit() else None
 
         from_dt = datetime.strptime(from_date, "%Y-%m-%d")
         to_dt = datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1)
@@ -553,12 +599,23 @@ def setup_routes(app):
             .filter(TipH.timestamp >= from_dt)
             .filter(TipH.timestamp < to_dt)
         )
+
         if not all_locations and selected_location:
             query = query.filter(TipH.location == selected_location)
 
+        # 🔧 NEW: filter by selected employee (maps id -> User.name -> TipD.username)
+        if user_id is not None:
+            u = User.query.get(user_id)
+            chosen_name = (u.name.strip() if u and u.name else None)
+            if chosen_name:
+                query = query.filter(TipD.username == chosen_name)
+            else:
+                current_app.logger.warning(
+                    "Export user filter requested but user not found or has no name: user_id=%s", user_id
+                )
+
         records = query.all()
 
-        # Build DataFrame with internal column names
         df = pd.DataFrame(records, columns=[
             "timestamp",
             "location",
@@ -568,20 +625,18 @@ def setup_routes(app):
             "amount_chf"
         ])
 
-        # Format timestamp to date only
+        if df.empty:
+            # keep headers in the export even if no matches
+            df = pd.DataFrame(columns=["timestamp","location","reporter","worker","duration","amount_chf"])
+
         df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.date
-
-        # Ensure amount is numeric with 2 decimals
         df["amount_chf"] = pd.to_numeric(df["amount_chf"]).round(2)
-
-        # Convert enum to readable strings
         df["duration"] = df["duration"].apply(lambda d: {
             "vormittag": "Vormittag",
             "nachmittag": "Nachmittag",
             "ganzer_tag": "ganzer Tag"
         }.get(d.name if hasattr(d, "name") else str(d), str(d)))
 
-        # Rename columns for export
         df.rename(columns={
             "timestamp": "Datum",
             "location": "Standort",
@@ -591,22 +646,19 @@ def setup_routes(app):
             "amount_chf": "Trinkgeld_CHF"
         }, inplace=True)
 
-        # Sort by date, location, worker
         df.sort_values(by=["Datum", "Standort", "Mitarbeiter"], inplace=True)
 
-        # Export to Excel
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name="Trinkgelder")
-
         output.seek(0)
+
         return send_file(
             output,
             download_name="trinkgelder_export.xlsx",
             as_attachment=True,
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
@@ -623,8 +675,6 @@ def setup_routes(app):
     def search_users():
         q = (request.args.get("q") or "").strip()
 
-        # If you’re on PostgreSQL, .ilike is perfect.
-        # If you need SQLite compatibility, use lower() fallback shown below.
         if q:
             # Postgres:
             users = (User.query
@@ -632,14 +682,11 @@ def setup_routes(app):
                                 User.email.ilike(f"%{q}%")))
                     .order_by(User.name.asc())
                     .all())
-            # SQLite fallback (uncomment if needed):
-            # users = (User.query
-            #          .filter(or_(func.lower(User.name).like(f"%{q.lower()}%"),
-            #                      func.lower(User.email).like(f"%{q.lower()}%")))
-            #          .order_by(User.name.asc())
-            #          .all())
         else:
             users = User.query.order_by(User.name.asc()).all()
 
         # Return only the rows so HTMX swaps the <tbody> content
         return render_template("admin/users/partials/user_rows.html", users=users)
+    
+
+ 
