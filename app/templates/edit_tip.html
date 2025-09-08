@@ -6,6 +6,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
     <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
     <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
+    <!-- htmx for the inline "Betrag" editing -->
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+    <link rel="icon" type="image/png" sizes="32x32"
+        href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
 </head>
 <body>
 
@@ -133,14 +137,14 @@
                 <h4 class="ui dividing header">Bisherige Einträge</h4>
             </div>
             <div class="eight wide column right aligned" style="display: flex; align-items: center; justify-content: flex-end;">
-                <div style="font-size: 1.2em; font-weight: bold;">
+                <div id="dayTotal" style="font-size: 1.2em; font-weight: bold;">
                     Tagestotal: CHF {{ "{:.2f}".format(total_amount) }}
                 </div>
             </div>
         </div>
 
         {% if details %}
-        <table class="ui celled table">
+        <table class="ui celled table" id="detailsTable">
             <thead>
                 <tr>
                     <th style="width: 50%;">Mitarbeiter</th>
@@ -159,8 +163,18 @@
                     {% endif %}
                     </td>
                     <td>{{ d.duration.value }}</td>
-                    <td style="text-align: right;">{{ "{:.2f}".format(d.amount_chf) }}</td>
+                    <td style="text-align: right;"
+                        hx-get="{{ url_for('edit_tipd_amount', tipd_id=d.tipd_id) }}"
+                        hx-trigger="click"
+                        hx-target="closest tr"
+                        hx-swap="outerHTML"
+                        hx-select="tr">
+                    {{ "{:.2f}".format(d.amount_chf) }}
+                    </td>
                     <td style="white-space: nowrap;">
+                        <a href="{{ url_for('edit_tip_detail', tipd_id=d.tipd_id) }}" class="ui icon button blue" title="Bearbeiten">
+                            <i class="pencil alternate icon"></i>
+                        </a>
                         <button 
                             type="button" 
                             class="ui icon button red show-delete-modal" 
@@ -168,9 +182,6 @@
                             data-delete-url="{{ url_for('delete_tip_detail', tipd_id=d.tipd_id) }}">
                             <i class="trash icon"></i>
                         </button>
-                        <a href="{{ url_for('edit_tip_detail', tipd_id=d.tipd_id) }}" class="ui icon button blue" title="Bearbeiten">
-                            <i class="edit icon"></i>
-                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -242,6 +253,32 @@
 <script>
     $('.ui.dropdown').dropdown();
 </script>
+
+<script>
+  document.body.addEventListener('update-total', function (e) {
+    const el = document.getElementById('dayTotal');
+    if (!el) return;
+
+    // HTMX sends { value: payload, elt: ... }
+    let payload = e.detail;
+    if (payload && typeof payload === 'object' && 'value' in payload) {
+      payload = payload.value;
+    }
+
+    let v = (typeof payload === 'number')
+      ? payload
+      : parseFloat(String(payload).replace(',', '.'));
+
+    if (Number.isNaN(v)) {
+      console.warn('update-total payload not numeric:', e.detail);
+      return;
+    }
+    el.textContent = 'Tagestotal: CHF ' + v.toFixed(2);
+  });
+</script>
+
+
+
 
 </body>
 </html>

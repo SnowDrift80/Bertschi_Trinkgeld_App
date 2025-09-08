@@ -1,0 +1,36 @@
+<td style="text-align: right;">
+  <form
+      hx-post="{{ url_for('update_tipd_amount', tipd_id=d.tipd_id) }}"
+      hx-target="closest td"
+      hx-swap="outerHTML"
+      style="display:inline-flex; gap:.4rem; align-items:center; justify-content:flex-end;">
+    {{ csrf_token()|safe }}
+    <input type="number"
+           name="amount_chf"
+           step="0.05"
+           min="0"
+           value="{{ '{:.2f}'.format(d.amount_chf) }}"
+           style="text-align:right; width:7.5rem;"
+           autofocus
+           onfocus="this.select()"
+           onkeydown="if(event.key==='Escape'){
+            this.closest('td').querySelector('button[title=Abbrechen]').click(); 
+           }">
+    <button type="submit" class="ui mini icon button green" title="Speichern">
+      <i class="check icon"></i>
+    </button>
+    <button type="button"
+            class="ui mini icon button"
+            title="Abbrechen"
+            hx-get="{{ url_for('view_tipd_amount', tipd_id=d.tipd_id) }}"
+            hx-target="closest td"
+            hx-swap="outerHTML">
+      <i class="times icon"></i>
+    </button>
+  </form>
+  {% if error %}
+    <div class="ui pointing red basic label" style="margin-top:.4rem;">
+      {{ error }}
+    </div>
+  {% endif %}
+</td>

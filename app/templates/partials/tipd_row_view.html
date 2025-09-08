@@ -1,0 +1,23 @@
+<tr>
+  <td>{{ d.username }}</td>
+  <td>{{ d.duration.value }}</td>
+  <td style="text-align:right"
+      hx-get="{{ url_for('edit_tipd_amount', tipd_id=d.tipd_id) }}"
+      hx-trigger="click"
+      hx-target="closest tr"
+      hx-swap="outerHTML"
+      hx-select="tr">
+    {{ "{:.2f}".format(d.amount_chf) }}
+  </td>
+  <td style="white-space:nowrap;">
+    <a href="{{ url_for('edit_tip_detail', tipd_id=d.tipd_id) }}" class="ui icon button blue" title="Bearbeiten">
+      <i class="pencil alternate icon"></i>
+    </a>
+    <button type="button"
+            class="ui icon button red show-delete-modal"
+            title="Löschen"
+            data-delete-url="{{ url_for('delete_tip_detail', tipd_id=d.tipd_id) }}">
+      <i class="trash icon"></i>
+    </button>
+  </td>
+</tr>

@@ -1,0 +1,49 @@
+<tr>
+  <td>{{ d.username }}</td>
+  <td>{{ d.duration.value }}</td>
+  <td style="text-align:right;">
+    <form
+      hx-post="{{ url_for('update_tipd_amount', tipd_id=d.tipd_id) }}"
+      hx-target="closest tr"
+      hx-swap="outerHTML"
+      hx-select="tr"
+      style="display:inline-flex; gap:.4rem; align-items:center; justify-content:flex-end;">
+      {{ csrf_token()|safe }}
+      <input type="number"
+             name="amount_chf"
+             step="0.05"
+             min="0"
+             value="{{ '{:.2f}'.format(d.amount_chf) }}"
+             style="text-align:right; width:7.5rem;"
+             autofocus
+             onfocus="this.select()"
+             onkeydown="if(event.key==='Escape'){ this.closest('tr').querySelector('button[title=Abbrechen]').click(); }">
+      <button type="submit" class="ui mini icon button green" title="Speichern">
+        <i class="check icon"></i>
+      </button>
+      <button type="button"
+              class="ui mini icon button"
+              title="Abbrechen"
+              hx-get="{{ url_for('view_tipd_row', tipd_id=d.tipd_id) }}"
+              hx-target="closest tr"
+              hx-swap="outerHTML"
+              hx-select="tr">
+        <i class="times icon"></i>
+      </button>
+    </form>
+    {% if error %}
+      <div class="ui pointing red basic label" style="margin-top:.4rem;">{{ error }}</div>
+    {% endif %}
+  </td>
+  <td style="white-space:nowrap;">
+    <a href="{{ url_for('edit_tip_detail', tipd_id=d.tipd_id) }}" class="ui icon button blue" title="Bearbeiten">
+      <i class="pencil alternate icon"></i>
+    </a>
+    <button type="button"
+            class="ui icon button red show-delete-modal"
+            title="Löschen"
+            data-delete-url="{{ url_for('delete_tip_detail', tipd_id=d.tipd_id) }}">
+      <i class="trash icon"></i>
+    </button>
+  </td>
+</tr>

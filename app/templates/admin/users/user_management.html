@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/bertschi_favicon32.png') }}">
     <title>Benutzerverwaltung – Bertschi</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/semantic.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fomantic/semantic.min.css') }}">
     
     <style>
         body, html {
@@ -50,21 +50,33 @@
         <h3 class="ui header" style="margin-top: 3rem; display: flex; justify-content: space-between; align-items: center;">
         <span>Alle Benutzer</span>
 
-        <form class="ui action input"
-                hx-get="{{ url_for('search_users') }}"
-                hx-target="#user-table-body"
-                hx-swap="innerHTML"
-                hx-push-url="false">
-            <input id="user-search"
-                type="text"
+        <!-- Search bar without a form -->
+        <div class="ui action input"
+            role="search"
+            hx-get="{{ url_for('search_users') }}"
+            hx-target="#user-table-body"
+            hx-swap="innerHTML"
+            hx-push-url="false"
+            hx-include="#user-search"
+            hx-trigger="keyup changed delay:300ms from:#user-search, keyup[key=='Enter'] from:#user-search, search from:#user-search">
+
+        <input id="user-search"
+                type="search"
                 name="q"
-                placeholder="Name oder E-Mail suchen..."
-                autocomplete="off"
-                hx-trigger="keyup changed delay:300ms">
-            <button class="ui primary button" type="submit">
+                placeholder="Name oder Benutzer suchen…"
+                autocomplete="off">
+
+        <button class="ui primary button"
+                type="button"
+                hx-get="{{ url_for('search_users') }}"
+                hx-include="#user-search"
+                hx-target="#user-table-body"
+                hx-swap="innerHTML">
             <i class="search icon"></i> Suchen
-            </button>
-        </form>
+        </button>
+        </div>
+
+
         </h3>
 
         <table class="ui celled table">

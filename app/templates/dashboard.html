@@ -13,17 +13,12 @@
     <script src="{{ url_for('static', filename='fomantic/semantic.js') }}"></script>
     <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
 
-
-    {% include 'partials/topbar.html' %} 
-
-
-
     <style>
         body, html {
             height: 100%;
             margin: 0;
         }
-        
+
         .top-bar {
             height: 2cm;
             display: flex;
@@ -32,7 +27,7 @@
             padding: 0 1rem;
             background-color: #f9fafb;
             border-bottom: 1px solid #ccc;
-        } 
+        }
         .workspace {
             height: calc(100% - 2cm - 1px);
             display: flex;
@@ -40,53 +35,52 @@
             align-items: center;
             padding-top: 2rem;
             overflow-y: auto;
-        } 
+        }
     </style>
-
-
 </head>
 <body>
+    {% include 'partials/topbar.html' %}
 
-
-
-<!-- Main Workspace -->
+    <!-- Main Workspace -->
     <div class="workspace">
 
-<!-- Standortwahl + Button Box -->
-    <div class="ui raised segment" style="min-width: 320px; width: 480px; text-align: center; padding: 2rem;">
+        <!-- Standortwahl + Button Box -->
+        <div class="ui raised segment" style="min-width: 320px; width: 480px; text-align: center; padding: 2rem;">
 
-    <!-- Standort wählen (always shown) -->
-    <form method="POST" action="{{ url_for('select_location') }}" class="ui form">
-        {{ csrf_token()| safe }}
-        <div class="field">
-            <label>Standort wählen</label>
-            <select name="location" class="ui fluid dropdown" onchange="this.form.submit()" required>
-                <option value="">— Standort auswählen —</option>
-                {% for loc in all_locations %}
-                    <option value="{{ loc.location }}" {% if loc.location == selected_location %}selected{% endif %}>
+            <!-- Standort wählen (always shown) -->
+            <form method="POST" action="{{ url_for('select_location') }}" class="ui form" autocomplete="off">
+            {{ csrf_token()| safe }}
+                <div class="field">
+                    <label>Standort wählen</label>
+                    <select name="location" class="ui fluid dropdown" onchange="this.form.submit()" required>
+                    <!-- This is the forced default -->
+                    <option value="" disabled selected>— Standort auswählen —</option>
+
+                    {% for loc in all_locations %}
+                        <option value="{{ loc.location }}"
+                                {% if selected_location == loc.location %}selected{% endif %}>
                         {{ loc.location }}
-                    </option>
-                {% endfor %}
-            </select>
+                        </option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </form>
+
+            <div class="ui divider" style="margin-top: 2rem; margin-bottom: 2rem;"></div>
+
+            <!-- Create or Edit Button -->
+            {% if existing_report %}
+                <a href="{{ url_for('edit_tip', tiph_id=existing_report.tiph_id) }}"
+                   class="ui huge primary button requires-location">
+                    Trinkgeldabrechnung editieren
+                </a>
+            {% else %}
+                <a href="{{ url_for('create_tip') }}"
+                   class="ui huge green button requires-location" id="createButton">
+                    Trinkgeldabrechnung erstellen
+                </a>
+            {% endif %}
         </div>
-    </form>
-
-    <div class="ui divider" style="margin-top: 2rem; margin-bottom: 2rem;"></div>
-
-
-        <!-- Create or Edit Button -->
-        {% if existing_report %}
-            <a href="{{ url_for('edit_tip', tiph_id=existing_report.tiph_id) }}" class="ui huge primary button">
-                Trinkgeldabrechnung editieren
-            </a>
-        {% else %}
-            <a href="{{ url_for('create_tip') }}" class="ui huge green button" id="createButton">
-                Trinkgeldabrechnung erstellen
-            </a>
-        {% endif %}
-
-    </div>
-
 
         <!-- Last 7 Days Table or Empty Message -->
         <div style="flex: 0 0 auto; margin-top: 3rem; width: 80%;">
@@ -94,7 +88,7 @@
                 <div class="ui container">
                     <h3 class="ui dividing header">Trinkgeldabrechnungen der letzten 7 Tage</h3>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h4 class="ui header" style="margin: 0;">Standort: {{ user.location }}</h4>
+                        <h4 class="ui header" style="margin: 0;">Standort: {{ selected_location or '-' }}</h4>
                         {% if user.role == 'superadmin' %}
                             <a class="ui icon small button" style="margin: 0;" onclick="$('#exportModal').modal('show')">
                                 <i class="download icon"></i> Export nach Excel
@@ -108,36 +102,35 @@
                                 <th style="width: 26%;">Erstellt von</th>
                                 <th style="width: 26%;">Standort</th>
                                 {% if user.role == 'superadmin' %}
-                                <th style="width: 20%; text-align: right;">Trinkgeld (CHF)</th>
-                                <th style="width: 10%;">Aktion</th>
+                                    <th style="width: 20%; text-align: right;">Trinkgeld (CHF)</th>
+                                    <th style="width: 10%;">Aktion</th>
                                 {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for entry in tiph_entries %}
-                            <tr>
-                                <td style="width: 18%;">{{ entry.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
-                                <td style="width: 26%;">{{ entry.username }}</td>
-                                <td style="width: 26%;">{{ entry.location }}</td>
-                                {% if user.role == 'superadmin' %}
-                                <td style="width: 20%; text-align: right;">
-                                {{ "%.2f"|format(tip_totals[entry.tiph_id]) }}
-                                </td>
-                                <td style="width: 10%; white-space: nowrap; text-align: right;">
-                                <a href="{{ url_for('edit_tip', tiph_id=entry.tiph_id) }}"
-                                    class="ui icon button blue" title="Bearbeiten">
-                                    <i class="pencil alternate icon"></i>
-                                </a>
-
-                                <button type="button"
-                                        class="ui icon button red show-header-delete-modal"
-                                        title="Löschen"
-                                        data-delete-url="{{ url_for('delete_tip', tiph_id=entry.tiph_id) }}">
-                                    <i class="trash icon"></i>
-                                </button>
-                                </td>
-                                {% endif %}
-                            </tr>
+                                <tr>
+                                    <td style="width: 18%;">{{ entry.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+                                    <td style="width: 26%;">{{ entry.username }}</td>
+                                    <td style="width: 26%;">{{ entry.location }}</td>
+                                    {% if user.role == 'superadmin' %}
+                                        <td style="width: 20%; text-align: right;">
+                                            {{ "%.2f"|format(tip_totals[entry.tiph_id]) }}
+                                        </td>
+                                        <td style="width: 10%; white-space: nowrap; text-align: right;">
+                                            <a href="{{ url_for('edit_tip', tiph_id=entry.tiph_id) }}"
+                                               class="ui icon button blue requires-location" title="Bearbeiten">
+                                                <i class="pencil alternate icon"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="ui icon button red show-header-delete-modal"
+                                                    title="Löschen"
+                                                    data-delete-url="{{ url_for('delete_tip', tiph_id=entry.tiph_id) }}">
+                                                <i class="trash icon"></i>
+                                            </button>
+                                        </td>
+                                    {% endif %}
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -148,7 +141,17 @@
                 </div>
             {% endif %}
         </div>
+    </div>
 
+    <!-- Modal asking user to pick a location first -->
+    <div class="ui tiny modal" id="locationRequiredModal">
+        <div class="header">Standort erforderlich</div>
+        <div class="content">
+            <p>Bitte wählen Sie zuerst einen Standort aus, bevor Sie fortfahren.</p>
+        </div>
+        <div class="actions">
+            <div class="ui approve primary button">OK</div>
+        </div>
     </div>
 
     <!-- Delete Confirmation Modal for TipH on dashboard -->
@@ -159,29 +162,15 @@
         </div>
         <div class="actions">
             <form method="POST" id="deleteHeaderFormDashboard" action="">
-            {{ csrf_token()| safe }}
-            <button type="button" class="ui button deny">Abbrechen</button>
-            <button type="submit" class="ui red button">Löschen</button>
+                {{ csrf_token()| safe }}
+                <button type="button" class="ui button deny">Abbrechen</button>
+                <button type="submit" class="ui red button">Löschen</button>
             </form>
         </div>
     </div>
 
-    <script>
-    // Hook dashboard delete buttons
-    document.querySelectorAll('.show-header-delete-modal').forEach(btn => {
-        btn.addEventListener('click', function () {
-        const url = this.getAttribute('data-delete-url');
-        const form = document.getElementById('deleteHeaderFormDashboard');
-        form.action = url;
-        $('#deleteHeaderModalDashboard').modal('show');
-        });
-    });
-    </script>
-
-
     <!-- Export Modal for superadmin -->
     {% if user.role == 'superadmin' %}
-        <!-- Export Modal -->
         <div class="ui modal" id="exportModal">
             <i class="close icon"></i>
             <div class="header">Export Parameter einstellen</div>
@@ -190,49 +179,47 @@
                     {{ csrf_token()| safe }}
                     <div class="field">
                         <div class="ui toggle checkbox">
-                        <input type="checkbox" name="all_locations" id="all_locations">
-                        <label for="all_locations">Alle Standorte</label>
+                            <input type="checkbox" name="all_locations" id="all_locations">
+                            <label for="all_locations">Alle Standorte</label>
                         </div>
                     </div>
 
                     <div class="field">
                         <label>Standort</label>
-                        <select name="location" class="ui dropdown" id="location_dropdown">
-                        <option value="">— Standort auswählen —</option>
-                        {% for loc in full_locations_list %}
-                            <option value="{{ loc.location }}">{{ loc.location }}</option>
-                        {% endfor %}
+                        <select name="location" id="location_dropdown" class="ui fluid dropdown">
+                            <option value="">— Standort auswählen —</option>
+                            {% for loc in all_locations %}
+                                <option value="{{ loc.location }}">{{ loc.location }}</option>
+                            {% endfor %}
                         </select>
                     </div>
 
                     <div class="field">
-                    <label>Benutzer (optional)</label>
-                    <div id="export-user-dropdown" class="ui fluid search selection clearable dropdown">
-                        <input type="hidden" name="user_id" value="">
-                        <i class="dropdown icon"></i>
-                        <input class="search" autocomplete="off" tabindex="0">
-                        <div class="default text">Alle Benutzer</div>
-                        <div class="menu">
-                        {# initial server render shows all users under "Weitere Standorte" #}
-                        {% if other_location_users %}
-                            <div class="header">Alle Standorte</div>
-                            {% for u in other_location_users %}
-                            <div class="item" data-value="{{ u.id }}">{{ u.name }} ({{ u.username }}) — {{ u.location }}</div>
-                            {% endfor %}
-                        {% endif %}
+                        <label>Benutzer (optional)</label>
+                        <div id="export-user-dropdown" class="ui fluid search selection clearable dropdown">
+                            <input type="hidden" name="user_id" value="">
+                            <i class="dropdown icon"></i>
+                            <input class="search" autocomplete="off" tabindex="0">
+                            <div class="default text">Alle Benutzer</div>
+                            <div class="menu">
+                                {% if other_location_users %}
+                                    <div class="header">Alle Standorte</div>
+                                    {% for u in other_location_users %}
+                                        <div class="item" data-value="{{ u.id }}">{{ u.name }} ({{ u.username }}) — {{ u.location }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                    </div>
-
 
                     <div class="two fields">
                         <div class="field">
-                        <label>Datum von</label>
-                        <input type="date" name="date_from" required>
+                            <label>Datum von</label>
+                            <input type="date" name="date_from" required>
                         </div>
                         <div class="field">
-                        <label>Datum bis</label>
-                        <input type="date" name="date_to" required>
+                            <label>Datum bis</label>
+                            <input type="date" name="date_to" required>
                         </div>
                     </div>
                 </form>
@@ -245,30 +232,65 @@
     {% endif %}
 
     <script>
+        // -------- Fomantic init (once) --------
         $('.ui.dropdown').dropdown();
         $('.ui.checkbox').checkbox();
 
+        // -------- Delete modal (dashboard) --------
+        document.querySelectorAll('.show-header-delete-modal').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const url = this.getAttribute('data-delete-url');
+                const form = document.getElementById('deleteHeaderFormDashboard');
+                form.action = url;
+                $('#deleteHeaderModalDashboard').modal('show');
+            });
+        });
+
+        // -------- Standort-required guard --------
+        function currentLocationValue() {
+            return $('select[name="location"]').val();
+        }
+
+        // Block actions that require a Standort
+        $(document).on('click', 'a.requires-location, button.requires-location', function (e) {
+            if (!currentLocationValue()) {
+                e.preventDefault();
+                $('#locationRequiredModal').modal('show');
+                return false;
+            }
+        });
+
+        // Visual disable for "Erstellen" button
+        $(function () {
+            const $dropdown = $('select[name="location"]');
+            const $createButton = $('#createButton');
+            function updateButtonState() {
+                const hasSelection = !!$dropdown.val();
+                $createButton.toggleClass('disabled', !hasSelection);
+            }
+            updateButtonState();            // on page load
+            $dropdown.on('change', updateButtonState);
+        });
+
+        // -------- Export modal logic (superadmin) --------
+        {% if user.role == 'superadmin' %}
         function rebuildUserDropdown(users, headerText) {
             const $dd = $('#export-user-dropdown');
             const $menu = $dd.find('.menu');
             $menu.empty();
 
-            if (headerText) {
-            $menu.append(`<div class="header">${headerText}</div>`);
-            }
+            if (headerText) $menu.append(`<div class="header">${headerText}</div>`);
 
-            if (users.length === 0) {
-            $menu.append('<div class="item disabled">Keine Benutzer gefunden</div>');
+            if (!users.length) {
+                $menu.append('<div class="item disabled">Keine Benutzer gefunden</div>');
             } else {
-            users.forEach(u => {
-                const label = `${u.name} (${u.username}) — ${u.location}`;
-                $menu.append(`<div class="item" data-value="${u.id}">${label}</div>`);
-            });
+                users.forEach(u => {
+                    const label = `${u.name} (${u.username}) — ${u.location}`;
+                    $menu.append(`<div class="item" data-value="${u.id}">${label}</div>`);
+                });
             }
 
-            // clear current selection and refresh
-            $dd.dropdown('clear');
-            $dd.dropdown('refresh');
+            $dd.dropdown('clear').dropdown('refresh');
         }
 
         async function refreshUsersForExport() {
@@ -279,91 +301,44 @@
             if (!allChecked && loc) params.set('location', loc);
 
             try {
-            const resp = await fetch(`/api/users-for-export?${params.toString()}`, { credentials: 'same-origin' });
-            const users = await resp.json();
-            const header = allChecked ? 'Alle Standorte' : (loc ? `Standort: ${loc}` : 'Benutzer');
-            rebuildUserDropdown(users, header);
+                const resp = await fetch(`/api/users-for-export?${params.toString()}`, { credentials: 'same-origin' });
+                const users = await resp.json();
+                const header = allChecked ? 'Alle Standorte' : (loc ? `Standort: ${loc}` : 'Benutzer');
+                rebuildUserDropdown(users, header);
             } catch (e) {
-            rebuildUserDropdown([], 'Fehler beim Laden');
-            console.error(e);
+                rebuildUserDropdown([], 'Fehler beim Laden');
+                console.error(e);
             }
         }
 
-        // Existing handlers (enhanced)
         $('#all_locations').on('change', function () {
             const checked = $(this).is(':checked');
-            if (checked) {
-            $('#location_dropdown').val('').dropdown('clear');
-            }
+            if (checked) $('#location_dropdown').val('').dropdown('clear');
             refreshUsersForExport();
         });
 
         $('#location_dropdown').on('change', function () {
             const val = $(this).val();
-            if (val) {
-            $('#all_locations').prop('checked', false).closest('.ui.checkbox').checkbox('set unchecked');
-            }
+            if (val) $('#all_locations').prop('checked', false).closest('.ui.checkbox').checkbox('set unchecked');
             refreshUsersForExport();
         });
 
-        // Modal open: set defaults and load ALL users
         $('#exportModal').modal({
             onShow: function () {
-            $('#all_locations').prop('checked', true).closest('.ui.checkbox').checkbox('set checked');
-            $('#location_dropdown').val('').dropdown('clear');
+                $('#all_locations').prop('checked', true).closest('.ui.checkbox').checkbox('set checked');
+                $('#location_dropdown').val('').dropdown('clear');
 
-            // init user dropdown if not already
-            $('#export-user-dropdown').dropdown({
-                clearable: true,
-                fullTextSearch: 'exact',
-                forceSelection: false,
-                selectOnKeydown: false
-            });
+                $('#export-user-dropdown').dropdown({
+                    clearable: true,
+                    fullTextSearch: 'exact',
+                    forceSelection: false,
+                    selectOnKeydown: false
+                });
 
-            refreshUsersForExport();
+                refreshUsersForExport();
             }
         });
-
-        // Keep your create button enable/disable logic:
-        $(document).ready(function () {
-            const $dropdown = $('select[name="location"]');
-            const $createButton = $('#createButton');
-
-            function updateButtonState() {
-            const selected = $dropdown.val();
-            if (!selected) {
-                $createButton.addClass('disabled');
-            } else {
-                $createButton.removeClass('disabled');
-            }
-            }
-
-            updateButtonState();
-            $dropdown.on('change', updateButtonState);
-        });
+        {% endif %}
     </script>
-
-
-    <script>
-        $(document).ready(function () {
-            const $dropdown = $('select[name="location"]');
-            const $createButton = $('#createButton');
-
-            function updateButtonState() {
-                const selected = $dropdown.val();
-                if (!selected) {
-                    $createButton.addClass('disabled');
-                } else {
-                    $createButton.removeClass('disabled');
-                }
-            }
-
-            // Run once on page load and on change
-            updateButtonState();
-            $dropdown.on('change', updateButtonState);
-        });
-    </script>
-
 </body>
-
 </html>

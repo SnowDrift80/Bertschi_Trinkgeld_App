@@ -8,6 +8,8 @@ import tempfile
 import textwrap
 import time
 import pytz
+import json
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from datetime import datetime, date, timedelta
 from datetime import time as dt_time
@@ -18,7 +20,7 @@ import pandas as pd
 
 from flask import (
     render_template, request, session, redirect, url_for, abort,
-    flash, jsonify, send_file, after_this_request,
+    flash, jsonify, send_file, after_this_request, make_response,
     Response
 )
 from flask_wtf.csrf import generate_csrf
@@ -63,25 +65,44 @@ def setup_routes(app):
     @app.route("/")
     @limiter.limit("20 per minute")
     def index():
+        # already logged in? → skip login form
+        if session.get("user_id"):
+            return redirect(url_for("dashboard"))
         user = None
         if "user_id" in session:
             user = User.query.get(session["user_id"])
         return render_template("index.html", topbar_title="Trinkgelderfassung - Login", current_date=AppDate.get_current_date_header(), user=user)
 
 
-    @app.route("/login", methods=["POST"])
+    @app.route("/login", methods=["GET", "POST"])
     @limiter.limit("20 per minute")
     def login():
-        email = request.form["email"]
-        password = request.form["password"]
-        user = User.query.filter_by(email=email).first()
+        if request.method == "POST":
+            email = request.form["email"]
+            password = request.form["password"]
+            user = User.query.filter_by(email=email).first()
 
-        if user and user.check_password(password):
-            session["user_id"] = user.id
-            return redirect(url_for("dashboard"))
-        else:
-            # could flash error message later
-            return render_template("index.html", topbar_title="Trinkgelderfassung - Login", current_date=AppDate.get_current_date_header(), user=None)
+            if user and user.check_password(password):
+                session["user_id"] = user.id
+                # optional: reset location on fresh login
+                session.pop("selected_location", None)
+                return redirect(url_for("dashboard"))
+
+            # failed login → show form again
+            return render_template(
+                "index.html",
+                topbar_title="Trinkgelderfassung - Login",
+                current_date=AppDate.get_current_date_header(),
+                user=None,
+            )
+
+        # GET request → show login form
+        return render_template(
+            "index.html",
+            topbar_title="Trinkgelderfassung - Login",
+            current_date=AppDate.get_current_date_header(),
+            user=None,
+        )
 
 
     @app.get("/api/users-for-export")
@@ -121,7 +142,7 @@ def setup_routes(app):
         today = date.today()
 
         # Default location is the user's own location
-        selected_location = session.get("selected_location", user.location)
+        selected_location = session.get("selected_location")
 
         # === Initial lists for export modal: show ALL users by default (superadmin stats) ===
         all_users_sorted = (
@@ -171,6 +192,7 @@ def setup_routes(app):
             .first()
         )
 
+        # Tip list: if no selection yet and user is not superadmin, show nothing
         if user.role == "superadmin":
             tiph_entries = (
                 TipH.query
@@ -203,7 +225,7 @@ def setup_routes(app):
             current_date=AppDate.get_current_date_header(),
             existing_report=existing_report,
             tiph_entries=tiph_entries,
-            selected_location=selected_location,
+            selected_location=selected_location, 
             all_locations=all_locations,
             full_locations_list=full_locations_list,
             tip_totals=tip_totals,
@@ -417,6 +439,10 @@ def setup_routes(app):
         user_id = session.get("user_id")
         if not user_id:
             return redirect(url_for("index"))
+        
+        if not session.get('selected_location'):
+            flash('Bitte wählen Sie zuerst einen Standort.')
+            return redirect(url_for('dashboard'))        
 
         user = User.query.get(user_id)
 
@@ -689,4 +715,56 @@ def setup_routes(app):
         return render_template("admin/users/partials/user_rows.html", users=users)
     
 
- 
+    def _calc_total_for_header(tiph_id):
+        total = db.session.query(func.coalesce(func.sum(TipD.amount_chf), 0)) \
+                        .filter(TipD.tiph_id == tiph_id).scalar()
+        # ensure Decimal with 2 dp
+        if total is None:
+            total = Decimal("0.00")
+        if not isinstance(total, Decimal):
+            total = Decimal(total)
+        return total.quantize(Decimal("0.01"))
+    
+
+    @app.get("/tip-detail/<int:tipd_id>/amount/edit")
+    def edit_tipd_amount(tipd_id):
+        d = TipD.query.get_or_404(tipd_id)
+        return render_template("partials/tipd_row_edit_amount.html", d=d)
+
+    @app.get("/tip-detail/<int:tipd_id>/row/view")
+    def view_tipd_row(tipd_id):
+        d = TipD.query.get_or_404(tipd_id)
+        return render_template("partials/tipd_row_view.html", d=d)
+
+
+    @app.post("/tip-detail/<int:tipd_id>/amount/update", endpoint="update_tipd_amount")
+    def update_tipd_amount(tipd_id):
+        d = TipD.query.get_or_404(tipd_id)
+        raw = (request.form.get("amount_chf") or "").strip()
+
+        if raw == "":
+            return _render_row_edit_with_error(d, "Bitte Betrag eingeben.")
+        try:
+            amount = Decimal(raw.replace(",", "."))
+        except InvalidOperation:
+            return _render_row_edit_with_error(d, "Ungültiger Betrag.")
+        if amount < 0:
+            return _render_row_edit_with_error(d, "Negativer Betrag ist nicht erlaubt.")
+
+        d.amount_chf = amount.quantize(Decimal("0.01"))
+        db.session.commit()
+
+        # return only the <tr>
+        html_row = render_template("partials/tipd_row_view.html", d=d)
+        total_amount = _calc_total_for_header(d.tiph_id)  # Decimal(2dp)
+
+        resp = make_response(html_row, 200)
+        # 🔁 fire AFTER the swap so the listener definitely sees it
+        resp.headers["HX-Trigger-After-Swap"] = json.dumps({"update-total": float(total_amount)})
+        return resp
+
+
+    def _render_row_edit_with_error(d, msg):
+        # Keep error path simple: just re-render the edit row (no OOB/trigger)
+        html_row = render_template("partials/tipd_row_edit_amount.html", d=d, error=msg)
+        return html_row, 400

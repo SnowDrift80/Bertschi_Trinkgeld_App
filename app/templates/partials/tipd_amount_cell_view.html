@@ -1,0 +1,7 @@
+<td style="text-align: right;"
+    hx-get="{{ url_for('edit_tipd_amount', tipd_id=d.tipd_id) }}"
+    hx-trigger="click"
+    hx-target="this"
+    hx-swap="outerHTML">
+  {{ "{:.2f}".format(d.amount_chf) }}
+</td>
