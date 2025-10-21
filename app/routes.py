@@ -21,7 +21,7 @@ import pandas as pd
 from flask import (
     render_template, request, session, redirect, url_for, abort,
     flash, jsonify, send_file, after_this_request, make_response,
-    Response
+    Response, render_template_string
 )
 from flask_wtf.csrf import generate_csrf
 from flask_limiter import Limiter
@@ -43,6 +43,8 @@ from .helpers.helper import AppDate, FileHandling
 limiter = Limiter(get_remote_address)
 locale.setlocale(locale.LC_TIME, "de_CH.UTF-8") 
 
+
+ALLOW_CURRENT_OWNER_TO_HANDOVER = True  # whether the current owner can hand over to someone else
 
 
 def login_required(f):
@@ -131,6 +133,46 @@ def setup_routes(app):
         ])
 
 
+    @app.route("/tip/<int:tiph_id>/takeover-and-edit", methods=["POST"], endpoint="takeover_and_edit_tiph")
+    @login_required
+    def takeover_and_edit_tiph(tiph_id):
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("index"))
+        user = User.query.get(user_id)
+
+        tiph = TipH.query.get_or_404(tiph_id)
+
+        # Block if user already owns a report today (any location)
+        today = date.today()
+        existing_own = (
+            TipH.query
+            .filter(
+                func.date(TipH.timestamp) == today,
+                TipH.username == user.name
+            )
+            .order_by(TipH.timestamp.desc())
+            .first()
+        )
+        if existing_own and existing_own.tiph_id != tiph.tiph_id:
+            flash(
+                f"Sie haben heute bereits eine Abrechnung (Standort: {existing_own.location}). "
+                "Übernahme nicht möglich.",
+                "warning",
+            )
+            return redirect(url_for("edit_tip", tiph_id=existing_own.tiph_id))
+
+        # (For later) superadmin bypass:
+        # if user.role == "superadmin":  # allow multiple; comment out above block
+
+        # Transfer ownership and go edit
+        tiph.username = user.name
+        db.session.commit()
+        return redirect(url_for("edit_tip", tiph_id=tiph.tiph_id))
+
+
+
+
     @app.route("/dashboard")
     @login_required
     def dashboard():
@@ -141,31 +183,25 @@ def setup_routes(app):
         user = User.query.get(user_id)
         today = date.today()
 
-        # Default location is the user's own location
+        # Default location chosen earlier by user
         selected_location = session.get("selected_location")
 
-        # === Initial lists for export modal: show ALL users by default (superadmin stats) ===
+        # === Lists for export modal: show ALL users by default ===
         all_users_sorted = (
-            User.query
-                .order_by(User.location.asc(), User.name.asc())
-                .all()
+            User.query.order_by(User.location.asc(), User.name.asc()).all()
         )
-        current_location_users = []  # empty "current" section by default
+        current_location_users = []
         other_location_users = all_users_sorted
 
-        # Step 1: Get all TipH reports for today
+        # ---- KEEP: your existing 'all_locations' logic (filtered) ----
         reports_today = (
             db.session.query(TipH.location, TipH.username)
             .filter(func.date(TipH.timestamp) == today)
             .all()
         )
-
-        # Step 2: Build a set of locations that were reported today by someone else
         locations_with_report_by_other = {
-            location for location, username in reports_today if username != user.name
+            loc for loc, uname in reports_today if uname != user.name
         }
-
-        # Step 3: Filter all_locations to exclude those
         all_locations = (
             LocationList.query
             .filter(~LocationList.location.in_(locations_with_report_by_other))
@@ -173,26 +209,68 @@ def setup_routes(app):
             .all()
         )
 
-        full_locations_list = (
-            LocationList.query
-            .order_by(LocationList.location)
+        # For export modal (full list)
+        all_locations_full = LocationList.query.order_by(LocationList.location).all()
+        full_locations_list = LocationList.query.order_by(LocationList.location).all()
+
+        # Dedicated list for the dropdown (ALL locations for everyone)
+        dropdown_locations = LocationList.query.order_by(LocationList.location).all()
+
+        # Owner label per location for TODAY (latest entry per location)
+        latest_per_loc_sq = (
+            db.session.query(
+                TipH.location.label("loc"),
+                func.max(TipH.timestamp).label("max_ts"),
+            )
+            .filter(func.date(TipH.timestamp) == today)
+            .group_by(TipH.location)
+            .subquery()
+        )
+        latest_rows = (
+            db.session.query(TipH.location, TipH.username)
+            .join(
+                latest_per_loc_sq,
+                db.and_(
+                    TipH.location == latest_per_loc_sq.c.loc,
+                    TipH.timestamp == latest_per_loc_sq.c.max_ts,
+                ),
+            )
             .all()
         )
+        todays_owner_by_location = {loc: username for loc, username in latest_rows}
 
         seven_days_ago = today - timedelta(days=6)
 
-        # Check if today's report exists for selected location
+        # Latest report for the *selected* location (any owner)
         existing_report = (
             TipH.query
             .filter(
                 db.func.date(TipH.timestamp) == today,
-                TipH.location == selected_location,
-                TipH.username == user.name
+                TipH.location == selected_location
             )
+            .order_by(TipH.timestamp.desc())
             .first()
         )
 
-        # Tip list: if no selection yet and user is not superadmin, show nothing
+        # The active user's own report today (any location)
+        user_report_today = (
+            TipH.query
+            .filter(
+                db.func.date(TipH.timestamp) == today,
+                TipH.username == user.name
+            )
+            .order_by(TipH.timestamp.desc())
+            .first()
+        )
+        has_user_report_today = user_report_today is not None
+
+        # convenience for template
+        report_owned_by_current_user = (
+            bool(existing_report) and existing_report.username == user.name
+        )
+        report_owner_name = existing_report.username if existing_report else None
+
+        # Tip list
         if user.role == "superadmin":
             tiph_entries = (
                 TipH.query
@@ -224,15 +302,23 @@ def setup_routes(app):
             user=user,
             current_date=AppDate.get_current_date_header(),
             existing_report=existing_report,
+            report_owner_name=report_owner_name,
+            report_owned_by_current_user=report_owned_by_current_user,
+            user_report_today=user_report_today,
+            has_user_report_today=has_user_report_today,
             tiph_entries=tiph_entries,
-            selected_location=selected_location, 
+            selected_location=selected_location,
             all_locations=all_locations,
+            all_locations_full=all_locations_full,
             full_locations_list=full_locations_list,
+            dropdown_locations=dropdown_locations,
+            todays_owner_by_location=todays_owner_by_location,
             tip_totals=tip_totals,
-            # lists for the modal user dropdown (initially "all users")
             current_location_users=current_location_users,
             other_location_users=other_location_users,
         )
+
+
 
     
 
@@ -596,22 +682,36 @@ def setup_routes(app):
         return redirect(url_for("dashboard"))
 
 
-
-
     @app.route("/export-tip-data", methods=["POST"])
     @login_required
     def export_tip_data():
-        from_date = request.form.get("date_from")
-        to_date = request.form.get("date_to")
+        # ---- form values ----
+        from_date_raw = (request.form.get("date_from") or "").strip()
+        to_date_raw   = (request.form.get("date_to") or "").strip()
         all_locations = request.form.get("all_locations") == "on"
-        selected_location = request.form.get("location")
-        # NEW: user filter
+        selected_location = (request.form.get("location") or "").strip()
+
         user_id_raw = (request.form.get("user_id") or "").strip()
         user_id = int(user_id_raw) if user_id_raw.isdigit() else None
 
-        from_dt = datetime.strptime(from_date, "%Y-%m-%d")
-        to_dt = datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1)
+        # ---- helpers ----
+        def parse_ymd(s: str):
+            if not s:
+                return None
+            try:
+                return datetime.strptime(s, "%Y-%m-%d")
+            except ValueError:
+                app.logger.warning("Invalid date format for export: %r", s)
+                return None
 
+        from_dt = parse_ymd(from_date_raw)   # inclusive lower bound
+        to_dt   = parse_ymd(to_date_raw)     # inclusive upper date (we'll +1 day for < upper)
+
+        # If only 'from' is given -> until end of TODAY
+        if from_dt and not to_dt:
+            to_dt = datetime.combine(date.today(), datetime.min.time())
+
+        # Build base query
         query = (
             db.session.query(
                 TipH.timestamp,
@@ -622,37 +722,37 @@ def setup_routes(app):
                 TipD.amount_chf
             )
             .join(TipD, TipH.tiph_id == TipD.tiph_id)
-            .filter(TipH.timestamp >= from_dt)
-            .filter(TipH.timestamp < to_dt)
         )
 
+        # Date filters (half-open [from, to+1))
+        if from_dt:
+            query = query.filter(TipH.timestamp >= from_dt)
+        if to_dt:
+            query = query.filter(TipH.timestamp < (to_dt + timedelta(days=1)))
+
+        # Location filter
         if not all_locations and selected_location:
             query = query.filter(TipH.location == selected_location)
 
-        # 🔧 NEW: filter by selected employee (maps id -> User.name -> TipD.username)
+        # User filter (map id -> name -> TipD.username)
         if user_id is not None:
             u = User.query.get(user_id)
             chosen_name = (u.name.strip() if u and u.name else None)
             if chosen_name:
                 query = query.filter(TipD.username == chosen_name)
             else:
-                current_app.logger.warning(
+                app.logger.warning(
                     "Export user filter requested but user not found or has no name: user_id=%s", user_id
                 )
 
         records = query.all()
 
+        # ---- DataFrame & Excel ----
         df = pd.DataFrame(records, columns=[
-            "timestamp",
-            "location",
-            "reporter",
-            "worker",
-            "duration",
-            "amount_chf"
+            "timestamp", "location", "reporter", "worker", "duration", "amount_chf"
         ])
 
         if df.empty:
-            # keep headers in the export even if no matches
             df = pd.DataFrame(columns=["timestamp","location","reporter","worker","duration","amount_chf"])
 
         df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.date
@@ -685,6 +785,7 @@ def setup_routes(app):
             as_attachment=True,
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+    
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
@@ -768,3 +869,100 @@ def setup_routes(app):
         # Keep error path simple: just re-render the edit row (no OOB/trigger)
         html_row = render_template("partials/tipd_row_edit_amount.html", d=d, error=msg)
         return html_row, 400
+
+
+    @app.get("/validate-username")
+    def validate_username():
+        username = (request.args.get("email") or "").strip()
+        exists = db.session.query(User.id).filter(User.email == username).first() is not None
+
+        # Return a tiny HTML snippet. Mark state via data-attribute for the client hook.
+        if not username:
+            html = '<div class="ui tiny message">Bitte Format „vorname.nachname“ verwenden.</div>'
+        elif exists:
+            html = '<div class="ui tiny red message" data-username-taken="1">Benutzername bereits vergeben.</div>'
+        else:
+            html = '<div class="ui tiny green message" data-username-taken="0">Benutzername ist verfügbar.</div>'
+        return render_template_string(html)
+    
+
+    @app.post("/tip/<int:tiph_id>/handover")
+    def handover_tip_owner(tiph_id):
+        user_id = session.get("user_id")
+        if not user_id:
+            flash("Bitte zuerst einloggen.", "warning")
+            return redirect(url_for("login"))
+
+        acting_user = User.query.get(user_id)
+        if not acting_user:
+            flash("Benutzerkonto nicht gefunden.", "error")
+            return redirect(url_for("login"))
+
+        tip = TipH.query.get_or_404(tiph_id)
+
+        # Permission check
+        is_admin = acting_user.role in ("admin", "superadmin")
+        is_current_owner = (tip.username == (acting_user.name or acting_user.email))
+        if not (is_admin or (ALLOW_CURRENT_OWNER_TO_HANDOVER and is_current_owner)):
+            flash("Keine Berechtigung, Besitzer zu ändern.", "error")
+            return redirect(url_for("edit_tip", tiph_id=tiph_id))
+
+        # Validate target user
+        new_user_id = (request.form.get("user_id") or "").strip()
+        if not new_user_id:
+            flash("Bitte neuen Besitzer auswählen.", "warning")
+            return redirect(url_for("edit_tip", tiph_id=tiph_id))
+
+        new_user = User.query.get(new_user_id)
+        if not new_user:
+            flash("Ziel-Benutzer nicht gefunden.", "error")
+            return redirect(url_for("edit_tip", tiph_id=tiph_id))
+
+        old_username = tip.username
+        tip.username = new_user.name or new_user.email  # keep your current string display
+
+        try:
+            db.session.commit()
+            flash(f"Besitzer geändert: {old_username} → {tip.username}", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Fehler beim Ändern des Besitzers.", "error")
+
+        return redirect(url_for("edit_tip", tiph_id=tiph_id))
+    
+
+    @app.get("/api/search-users")
+    def api_search_users():
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify([])
+
+        acting_user = User.query.get(user_id)
+        if not acting_user or acting_user.role not in ("admin", "superadmin"):
+            return jsonify([])
+
+        q = (request.args.get("q") or "").strip().lower()
+        query = User.query
+        if q:
+            query = query.filter(
+                db.or_(
+                    db.func.lower(User.name).like(f"%{q}%"),
+                    db.func.lower(User.email).like(f"%{q}%"),
+                    # add .username if you have it
+                )
+            )
+        users = query.order_by(User.location.asc(), User.name.asc()).limit(50).all()
+        return jsonify([
+            {
+                "id": u.id,
+                "label": f"{u.name} ({getattr(u, 'username', u.email)}) — {u.location or '-'}"
+            }
+            for u in users
+        ])
+
+
+    @app.context_processor
+    def inject_user():
+        uid = session.get("user_id")
+        u = User.query.get(uid) if uid else None
+        return {"user": u}

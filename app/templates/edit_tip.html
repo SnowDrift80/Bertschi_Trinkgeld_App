@@ -23,7 +23,17 @@
             <div class="eight wide column">
                 <h3 class="ui header">Trinkgelderfassung</h3>
                 <p><strong>Datum:</strong> {{ tip.timestamp.strftime('%d.%m.%Y %H:%M') }}</p>
-                <p><strong>Erstellt von:</strong> {{ tip.username }}</p>
+                <p style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+                    <strong>Erstellt von:</strong>
+                    <span id="currentOwner">{{ tip.username }}</span>
+
+                    {% if user.role in ['admin','superadmin'] or tip.username == user.name %}
+                        <button type="button" class="ui tiny button" onclick="$('#handoverModal').modal('show')">
+                        Besitzer ändern
+                        </button>
+                    {% endif %}
+                </p>
+
             </div>
             <div class="eight wide column right aligned" style="display: flex; align-items: center; justify-content: flex-end;">
                 <div style="font-size: 3.4em; font-weight: bold; color: #2185d0;">{{ tip.location }}</div>
@@ -63,7 +73,7 @@
                         <!-- Keep the same POST field name -->
                         <input type="hidden" name="username" value="">
                         <i class="dropdown icon"></i>
-                        <input class="search" autocomplete="off" tabindex="0">
+                        <input class="search" autocomplete="off" tabindex="0" autofocus>
                         <div class="default text">— Benutzer auswählen —</div>
 
                             <div class="menu">
@@ -110,7 +120,7 @@
                     <div class="three wide column">
                         <div class="field" style="text-align: right;">
                             <label style="float: right;">Betrag in CHF</label>
-                            <input type="number" step="0.05" name="amount_chf" placeholder="0.00" required style="text-align: right;" autofocus>
+                            <input type="number" step="0.05" name="amount_chf" placeholder="0.00" required style="text-align: right;" autofocus value="0.00">
                         </div>
                     </div>
                 </div>
@@ -193,6 +203,46 @@
     </div>
 
 </div>
+
+<!-- Handover Modal (change owner of TipH) -->
+{% if user.role in ['admin','superadmin'] or tip.username == user.name %}
+<div class="ui small modal" id="handoverModal">
+  <div class="header">Besitzer ändern</div>
+  <div class="content">
+    <form class="ui form" method="POST" action="{{ url_for('handover_tip_owner', tiph_id=tip.tiph_id) }}" id="handoverForm">
+      {{ csrf_token()| safe }}
+      <div class="field">
+        <label>Neuer Besitzer</label>
+        <div id="handover-user-dropdown" class="ui fluid search selection clearable dropdown">
+          <input type="hidden" name="user_id" value="">
+          <i class="dropdown icon"></i>
+          <input class="search" autocomplete="off" tabindex="0">
+          <div class="default text">— Benutzer auswählen —</div>
+          <div class="menu">
+            {% for loc, users in users_by_location.items() %}
+              {% if users %}
+                <div class="header">{{ loc or '—' }}</div>
+                {% for u in users %}
+                  <div class="item" data-value="{{ u.id }}">
+                    {{ u.name }}
+                    {% if u.username %}<span style="opacity:.6;">({{ u.username }})</span>{% endif %}
+                    — {{ u.location }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="actions">
+    <button class="ui button deny">Abbrechen</button>
+    <button class="ui primary button" onclick="document.getElementById('handoverForm').submit()">Übernehmen</button>
+  </div>
+</div>
+{% endif %}
+
 
 <!-- Delete Confirmation Modal for TipH -->
 <div class="ui small modal" id="deleteHeaderModal">
@@ -277,6 +327,72 @@
   });
 </script>
 
+<script>
+  // Ensure Fomantic dropdowns are active
+  $('.ui.dropdown').dropdown();
+
+  // Modal default
+  $('#handoverModal').modal({
+    autofocus: true,
+    observeChanges: true
+  });
+
+  // If you picked Option 2 (AJAX search), wire it here:
+  (function setupAjaxUserSearch(){
+    const $dd = $('#handover-user-dropdown');
+    if (!$dd.length) return;
+
+    // Fomantic lets us programmatically feed items into the menu.
+    const $menu = $dd.find('.menu');
+
+    let lastQ = '';
+    let pending = 0;
+    function render(items) {
+      $menu.empty();
+      if (!items || !items.length) {
+        $menu.append('<div class="item disabled">Keine Treffer</div>');
+      } else {
+        items.forEach(it => {
+          $menu.append(`<div class="item" data-value="${it.id}">${it.label}</div>`);
+        });
+      }
+      $dd.dropdown('refresh');
+    }
+
+    // Debounced search
+    let t = null;
+    $dd.dropdown({
+      clearable: true,
+      fullTextSearch: false,
+      forceSelection: false,
+      selectOnKeydown: false,
+      onShow: function(){
+        // initial empty search to load top users
+        fetchUsers('');
+      },
+      onSearch: function(q){
+        if (q === lastQ) return;
+        lastQ = q;
+        clearTimeout(t);
+        t = setTimeout(() => fetchUsers(q), 200);
+      }
+    });
+
+    async function fetchUsers(q){
+      pending++;
+      try {
+        const resp = await fetch(`/api/search-users?q=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
+        const data = await resp.json();
+        render(data);
+      } catch (e) {
+        render([]);
+        console.error(e);
+      } finally {
+        pending--;
+      }
+    }
+  })();
+</script>
 
 
 

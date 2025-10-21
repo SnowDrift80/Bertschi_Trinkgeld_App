@@ -53,13 +53,16 @@
                 <div class="field">
                     <label>Standort wählen</label>
                     <select name="location" class="ui fluid dropdown" onchange="this.form.submit()" required>
-                    <!-- This is the forced default -->
                     <option value="" disabled selected>— Standort auswählen —</option>
 
-                    {% for loc in all_locations %}
+                    {# use the new dedicated list here #}
+                    {% for loc in dropdown_locations %}
                         <option value="{{ loc.location }}"
                                 {% if selected_location == loc.location %}selected{% endif %}>
                         {{ loc.location }}
+                        {% if todays_owner_by_location.get(loc.location) %}
+                            — {{ todays_owner_by_location.get(loc.location) }}
+                        {% endif %}
                         </option>
                     {% endfor %}
                     </select>
@@ -69,17 +72,55 @@
             <div class="ui divider" style="margin-top: 2rem; margin-bottom: 2rem;"></div>
 
             <!-- Create or Edit Button -->
-            {% if existing_report %}
+            {% if not existing_report %}
+                {% if has_user_report_today %}
+                    <div class="ui message warning">
+                        Sie haben heute bereits eine Abrechnung<br>(Standort: {{ user_report_today.location }})
+                    </div>
+                    <a href="{{ url_for('edit_tip', tiph_id=user_report_today.tiph_id) }}"
+                    class="ui huge primary button requires-location">
+                    Eigene Abrechnung öffnen
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('create_tip') }}"
+                    class="ui huge green button requires-location" id="createButton">
+                    Trinkgeldabrechnung erstellen
+                    </a>
+                {% endif %}
+                {% elif report_owned_by_current_user %}
                 <a href="{{ url_for('edit_tip', tiph_id=existing_report.tiph_id) }}"
-                   class="ui huge primary button requires-location">
+                    class="ui huge primary button requires-location">
                     Trinkgeldabrechnung editieren
                 </a>
-            {% else %}
-                <a href="{{ url_for('create_tip') }}"
-                   class="ui huge green button requires-location" id="createButton">
-                    Trinkgeldabrechnung erstellen
-                </a>
+                {% else %}
+                {% if has_user_report_today %}
+                    <div class="ui message warning">
+                        Sie haben heute bereits eine Abrechnung<br>(Standort: {{ user_report_today.location }})
+                    </div>
+                    <div class="ui" style="display:flex; justify-content:center; width:100%;">
+                        <div class="column right aligned">
+                            <a href="{{ url_for('edit_tip', tiph_id=user_report_today.tiph_id) }}"
+                                class="ui huge primary button">
+                                Eigene Abrechnung öffnen
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div style="width:100%; text-align:center;">
+                        <form id="takeoverForm"
+                                method="POST"
+                                action="{{ url_for('takeover_and_edit_tiph', tiph_id=existing_report.tiph_id) }}"
+                                style="display:inline-block; margin:0;">
+                            {{ csrf_token()|safe }}
+                            <button type="button"
+                                    class="ui huge orange button show-takeover-confirm requires-location">
+                            Übernehmen &amp; editieren
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
             {% endif %}
+
         </div>
 
         <!-- Last 7 Days Table or Empty Message -->
@@ -119,7 +160,7 @@
                                         </td>
                                         <td style="width: 10%; white-space: nowrap; text-align: right;">
                                             <a href="{{ url_for('edit_tip', tiph_id=entry.tiph_id) }}"
-                                               class="ui icon button blue requires-location" title="Bearbeiten">
+                                               class="ui icon button blue" title="Bearbeiten">
                                                 <i class="pencil alternate icon"></i>
                                             </a>
                                             <button type="button"
@@ -169,6 +210,20 @@
         </div>
     </div>
 
+
+    <!-- Takeover Confirmation Modal -->
+    <div class="ui small modal" id="takeoverConfirmModal">
+        <div class="header">Übernahme bestätigen</div>
+        <div class="content">
+            Sind Sie sicher, dass Sie die Abrechnung von <strong>{{ report_owner_name }}</strong> übernehmen wollen?
+        </div>
+        <div class="actions">
+        <button type="button" class="ui cancel primary button" id="takeoverCancel" autofocus>Nein</button>
+        <button type="button" class="ui approve button">Ja</button>
+        </div>
+    </div>
+
+
     <!-- Export Modal for superadmin -->
     {% if user.role == 'superadmin' %}
         <div class="ui modal" id="exportModal">
@@ -188,7 +243,7 @@
                         <label>Standort</label>
                         <select name="location" id="location_dropdown" class="ui fluid dropdown">
                             <option value="">— Standort auswählen —</option>
-                            {% for loc in all_locations %}
+                            {% for loc in all_locations_full %}
                                 <option value="{{ loc.location }}">{{ loc.location }}</option>
                             {% endfor %}
                         </select>
@@ -215,15 +270,27 @@
                     <div class="two fields">
                         <div class="field">
                             <label>Datum von</label>
-                            <input type="date" name="date_from" required>
+                            <input type="date" name="date_from">
                         </div>
                         <div class="field">
                             <label>Datum bis</label>
-                            <input type="date" name="date_to" required>
+                            <input type="date" name="date_to">
                         </div>
                     </div>
                 </form>
+
+                <div class="field">
+                    <div class="ui tiny buttons" id="export-date-presets" style="display:inline-flex; width:100%; justify-content:center;">
+                        <button type="button" class="ui button" data-preset="today">Heute</button>
+                        <button type="button" class="ui button" data-preset="last-week">Letzte Woche</button>
+                        <button type="button" class="ui button" data-preset="mtd">Monat bis heute</button>
+                        <button type="button" class="ui button" data-preset="last-month">Letzter Monat</button>
+                        <button type="button" class="ui button" data-preset="last-quarter">Letztes Quartal</button>
+                        <button type="button" class="ui button" data-preset="ytd">Jahr bis heute</button>
+                    </div>
+                </div>                
             </div>
+
             <div class="actions" style="display: flex; justify-content: space-between;">
                 <button class="ui button" onclick="$('#exportModal').modal('hide')">Abbrechen</button>
                 <button class="ui primary button" onclick="document.getElementById('exportForm').submit()">Ausführen</button>
@@ -231,114 +298,26 @@
         </div>
     {% endif %}
 
+    
     <script>
-        // -------- Fomantic init (once) --------
-        $('.ui.dropdown').dropdown();
-        $('.ui.checkbox').checkbox();
-
-        // -------- Delete modal (dashboard) --------
-        document.querySelectorAll('.show-header-delete-modal').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const url = this.getAttribute('data-delete-url');
-                const form = document.getElementById('deleteHeaderFormDashboard');
-                form.action = url;
-                $('#deleteHeaderModalDashboard').modal('show');
+        $(function () {
+            const $modal = $('#takeoverConfirmModal');
+            $('.show-takeover-confirm').on('click', function (e) {
+            e.preventDefault();
+            $modal.modal({
+                closable: false,
+                autofocus: false,
+                onApprove: function () {
+                document.getElementById('takeoverForm').submit();
+                }
+            }).modal('show');
             });
         });
-
-        // -------- Standort-required guard --------
-        function currentLocationValue() {
-            return $('select[name="location"]').val();
-        }
-
-        // Block actions that require a Standort
-        $(document).on('click', 'a.requires-location, button.requires-location', function (e) {
-            if (!currentLocationValue()) {
-                e.preventDefault();
-                $('#locationRequiredModal').modal('show');
-                return false;
-            }
-        });
-
-        // Visual disable for "Erstellen" button
-        $(function () {
-            const $dropdown = $('select[name="location"]');
-            const $createButton = $('#createButton');
-            function updateButtonState() {
-                const hasSelection = !!$dropdown.val();
-                $createButton.toggleClass('disabled', !hasSelection);
-            }
-            updateButtonState();            // on page load
-            $dropdown.on('change', updateButtonState);
-        });
-
-        // -------- Export modal logic (superadmin) --------
-        {% if user.role == 'superadmin' %}
-        function rebuildUserDropdown(users, headerText) {
-            const $dd = $('#export-user-dropdown');
-            const $menu = $dd.find('.menu');
-            $menu.empty();
-
-            if (headerText) $menu.append(`<div class="header">${headerText}</div>`);
-
-            if (!users.length) {
-                $menu.append('<div class="item disabled">Keine Benutzer gefunden</div>');
-            } else {
-                users.forEach(u => {
-                    const label = `${u.name} (${u.username}) — ${u.location}`;
-                    $menu.append(`<div class="item" data-value="${u.id}">${label}</div>`);
-                });
-            }
-
-            $dd.dropdown('clear').dropdown('refresh');
-        }
-
-        async function refreshUsersForExport() {
-            const allChecked = $('#all_locations').is(':checked');
-            const loc = $('#location_dropdown').val() || '';
-            const params = new URLSearchParams();
-            params.set('all', allChecked ? '1' : '0');
-            if (!allChecked && loc) params.set('location', loc);
-
-            try {
-                const resp = await fetch(`/api/users-for-export?${params.toString()}`, { credentials: 'same-origin' });
-                const users = await resp.json();
-                const header = allChecked ? 'Alle Standorte' : (loc ? `Standort: ${loc}` : 'Benutzer');
-                rebuildUserDropdown(users, header);
-            } catch (e) {
-                rebuildUserDropdown([], 'Fehler beim Laden');
-                console.error(e);
-            }
-        }
-
-        $('#all_locations').on('change', function () {
-            const checked = $(this).is(':checked');
-            if (checked) $('#location_dropdown').val('').dropdown('clear');
-            refreshUsersForExport();
-        });
-
-        $('#location_dropdown').on('change', function () {
-            const val = $(this).val();
-            if (val) $('#all_locations').prop('checked', false).closest('.ui.checkbox').checkbox('set unchecked');
-            refreshUsersForExport();
-        });
-
-        $('#exportModal').modal({
-            onShow: function () {
-                $('#all_locations').prop('checked', true).closest('.ui.checkbox').checkbox('set checked');
-                $('#location_dropdown').val('').dropdown('clear');
-
-                $('#export-user-dropdown').dropdown({
-                    clearable: true,
-                    fullTextSearch: 'exact',
-                    forceSelection: false,
-                    selectOnKeydown: false
-                });
-
-                refreshUsersForExport();
-            }
-        });
-        {% endif %}
     </script>
+
+    <script>
+        window.IS_SUPERADMIN = {{ 'true' if user.role == 'superadmin' else 'false' }};
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v={{ range(1,999999)|random }}"></script>
 </body>
 </html>

@@ -4,13 +4,27 @@
         <input type="hidden" name="user_id" value="{{ user_to_edit.id }}">
     {% endif %}
 
-    <div class="field">
+    <div class="field" data-tooltip="Eingabeformat: Vorname Name (z.B. Martin Meier)" data-position="top left">
         <label>Name</label>
-        <input type="text" name="name" placeholder="Name" required value="{{ user_to_edit.name if user_to_edit else '' }}">
+        <input type="text" name="name" placeholder="Vorname Name" 
+            required
+            pattern="^[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-Za-zÄÖÜäöüß]+)*\s+[A-ZÄÖÜ][a-zäöüß]+$"
+            title="Bitte geben Sie den Namen im Format 'Vorname Name' ein. Der erste Buchstabe des ersten und des letzten Wortes muss großgeschrieben sein."
+            value="{{ user_to_edit.name if user_to_edit else '' }}">
     </div>
-    <div class="field">
-        <label>Email</label>
-        <input name="email" placeholder="Email" required value="{{ user_to_edit.email if user_to_edit else '' }}" autocomplete="off">
+    <div class="field" data-tooltip="Eingabeformat: vorname.nachname (z.B. martin.meier)" data-position="top left">
+        <label>Nutzername</label>
+        <input name="email" placeholder="vorname.nachname"
+                required
+                pattern="^[0-9]*[a-zäöüß]+[0-9]*\.[0-9]*[a-zäöüß]+[0-9]*$"
+                title="Bitte im Format vorname.nachname eingeben (z.B. martin.meier)."
+                value="{{ user_to_edit.email if user_to_edit else '' }}" autocomplete="off"
+                hx-get="{{ url_for('validate_username') }}"
+                hx-trigger="input changed delay:400ms"
+                hx-target="#username-help"
+                hx-include="[name='email']"
+                hx-params="*">
+        <div id="username-help" class="ui tiny message" style="margin-top:.5rem;"></div>
     </div>
     <div class="field">
         <label>Passwort</label>
@@ -45,10 +59,26 @@
         </select>
     </div>
 
-    <button class="ui primary button" type="submit">
-        {% if user_to_edit %}Änderungen speichern
-        <button class="ui button" type="button" onclick="discardChanges()">Änderungen verwerfen</button>
-        {% else %}Benutzer erstellen{% endif %}
-    </button>
+    <div class="ui buttons">
+        <button id="submitBtn" class="ui primary button" type="submit">
+            {% if user_to_edit %}Änderungen speichern{% else %}Benutzer erstellen{% endif %}
+        </button>
+        {% if user_to_edit %}
+            <button class="ui button" type="button" onclick="discardChanges()">Änderungen verwerfen</button>
+        {% endif %}
+    </div>
     
 </form>
+
+
+<script>
+  // Optional: prevent submit when username is taken (HTMX event hook)
+  document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+    if (evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.path &&
+        evt.detail.requestConfig.path.includes("validate-username")) {
+      const resp = evt.detail.xhr.responseText || "";
+      const taken = resp.includes('data-username-taken="1"');
+      document.getElementById('submitBtn').disabled = taken;
+    }
+  });
+</script>
